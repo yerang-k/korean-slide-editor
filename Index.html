@@ -191,6 +191,8 @@
         </div>
       </div>
 
+      <button class="tool-btn" onclick="exitBox()" title="커서가 있는 상자 밖으로 나가기"><i class="fa-solid fa-arrow-turn-down"></i> 상자 밖으로</button>
+
       <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenImageInput').click();">
         <i class="fa-solid fa-image"></i> 내 PC 이미지
       </button>
@@ -215,13 +217,13 @@
 
   <div id="preview-container">
     <div id="control-widget">
-      <button onclick="toggleEditor()"><i class="fa-solid fa-desktop"></i> 수업 모드</button>
+      <button id="mode-btn" onclick="toggleEditor()"><i class="fa-solid fa-pen-to-square"></i> 편집 모드</button>
       <span style="color:#475569">|</span>
       <div style="display:flex; align-items:center; gap:6px;">
         <i class="fa-solid fa-clock"></i>
-        <span id="timer-display" style="font-family:monospace; font-size:15px;">03:00</span>
-        <button onclick="toggleTimer()"><i id="timer-icon" class="fa-solid fa-play"></i></button>
-        <button onclick="resetTimer()"><i class="fa-solid fa-rotate-right"></i></button>
+        <span id="timer-display" onclick="setTimer()" title="클릭해서 시간 설정 (예: 5 또는 1:30)" style="font-family:monospace; font-size:15px; cursor:pointer; border-bottom:1px dashed #64748b;">03:00</span>
+        <button onclick="toggleTimer()" title="시작/멈춤"><i id="timer-icon" class="fa-solid fa-play"></i></button>
+        <button onclick="resetTimer()" title="처음으로"><i class="fa-solid fa-rotate-right"></i></button>
       </div>
       <span style="color:#475569">|</span>
       <button id="draw-toggle-btn" onclick="toggleDrawingMode()"><i class="fa-solid fa-pen"></i> 판서(P)</button>
@@ -320,6 +322,12 @@
           onMouseup: function () { $('#summernote').summernote('saveRange'); }
         }
       });
+
+      // 디자인 상자 안에서 Enter로 밖으로 나가기 처리 (캡처 단계에서 가로챔)
+      var _editable = document.querySelector('.note-editable');
+      if (_editable) _editable.addEventListener('keydown', onBoxEnter, true);
+
+      updateModeButton(); // 수업/편집 모드 버튼 초기 표시
 
       revealEngine = new Reveal({
         embedded: true, hash: false, slideNumber: 'c/t', transition: 'slide',
@@ -533,6 +541,85 @@
     }
 
     /* =========================================================
+       디자인 상자 밖으로 나가기
+       - 상자 안에서 빈 줄에 Enter를 한 번 더 치면 상자 밖으로 빠져나옴
+       - 또는 툴바의 '상자 밖으로' 버튼
+       ========================================================= */
+    const BOX_SEL = '.card-box,.bogi-box,.box-blue,.box-green,.box-yellow,.box-red';
+
+    function boxAtCaret() {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return null;
+      let el = sel.getRangeAt(0).startContainer;
+      if (el.nodeType === 3) el = el.parentElement;
+      return (el && el.closest) ? el.closest(BOX_SEL) : null;
+    }
+
+    // 캐럿부터 상자 끝까지 글자가 없으면(=상자의 맨 끝이면) true
+    function caretAtBoxEnd(box, range) {
+      const r = document.createRange();
+      r.selectNodeContents(box);
+      r.setStart(range.endContainer, range.endOffset);
+      return r.toString().replace(/ /g, ' ').trim() === '';
+    }
+
+    // 캐럿이 있는 줄에서 캐럿 앞이 비어 있으면(빈 줄이면) true
+    function lineEmptyBeforeCaret(range) {
+      let node = range.startContainer, off = range.startOffset;
+      if (node.nodeType === 3) {
+        if (node.textContent.slice(0, off).replace(/ /g, ' ').trim() !== '') return false;
+        const prev = node.previousSibling;
+        return !prev || prev.nodeName === 'BR';
+      }
+      const prev = node.childNodes[off - 1];
+      return !prev || prev.nodeName === 'BR';
+    }
+
+    function escapeBox(box) {
+      // 상자 끝의 빈 줄(br·공백) 정리
+      while (box.lastChild && (box.lastChild.nodeName === 'BR' ||
+            (box.lastChild.nodeType === 3 && box.lastChild.textContent.replace(/ /g, ' ').trim() === ''))) {
+        box.removeChild(box.lastChild);
+      }
+      const p = document.createElement('p');
+      p.appendChild(document.createElement('br'));
+      box.parentNode.insertBefore(p, box.nextSibling);
+      const range = document.createRange();
+      range.setStart(p, 0); range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+      slidesData[currentSlideIndex] = $('#summernote').summernote('code');
+      scheduleSave();
+    }
+
+    // 에디터에서 Enter 가로채기: 상자 안 빈 줄에서 Enter → 밖으로, 그 외엔 상자 안 줄바꿈
+    function onBoxEnter(e) {
+      if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.isComposing) return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      let el = range.startContainer;
+      if (el.nodeType === 3) el = el.parentElement;
+      if (!el || !el.closest) return;
+      if (el.closest('li')) return;            // 목록 안에서는 기본 동작(새 항목)
+      const box = el.closest(BOX_SEL);
+      if (!box) return;                         // 상자 밖은 기본 동작
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (caretAtBoxEnd(box, range) && lineEmptyBeforeCaret(range)) escapeBox(box);
+      else document.execCommand('insertLineBreak');
+    }
+
+    // 툴바 '상자 밖으로' 버튼
+    function exitBox() {
+      $('#summernote').summernote('restoreRange');
+      $('#summernote').summernote('focus');
+      const box = boxAtCaret();
+      if (!box) { alert('먼저 상자 안을 클릭해서 커서를 둔 다음 눌러 주세요.'); return; }
+      escapeBox(box);
+    }
+
+    /* =========================================================
        슬라이드(장) 편집
        ========================================================= */
     function loadSlideToEditor() {
@@ -618,18 +705,54 @@
     function toggleEditor() {
       const container = document.getElementById('editor-container');
       container.classList.toggle('collapsed');
+      updateModeButton();
       setTimeout(() => { revealEngine.layout(); resizeCanvas(); }, 300);
     }
 
-    let timerInterval, timeLeft = 180, isTimerRunning = false;
+    // 편집창이 열려 있으면 '편집 모드', 접혀 있으면 '수업 모드'로 버튼 표시
+    function updateModeButton() {
+      const collapsed = document.getElementById('editor-container').classList.contains('collapsed');
+      const btn = document.getElementById('mode-btn');
+      if (!btn) return;
+      btn.innerHTML = collapsed
+        ? '<i class="fa-solid fa-desktop"></i> 수업 모드'
+        : '<i class="fa-solid fa-pen-to-square"></i> 편집 모드';
+    }
+
+    let timerInterval, timerBase = 180, timeLeft = 180, isTimerRunning = false;
     function updateTimerDisplay() { document.getElementById('timer-display').innerText = `${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`; }
+    function stopTimer_() { clearInterval(timerInterval); isTimerRunning = false; document.getElementById('timer-icon').className = 'fa-solid fa-play'; }
+
+    // 타이머 시간(분:초) 문자열 해석 → 초. 실패하면 null
+    function parseTimeInput(s) {
+      s = String(s).trim();
+      if (/^\d+$/.test(s)) return parseInt(s, 10) * 60;            // "5" → 5분
+      const m = s.match(/^(\d+)\s*:\s*([0-5]?\d)$/);               // "1:30" → 1분 30초
+      if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      return null;
+    }
+
+    // 타이머 시간(display 클릭) 설정
+    function setTimer() {
+      stopTimer_();
+      const inp = prompt('타이머를 몇 분으로 맞출까요?\n\n예) 5  →  5분\n예) 1:30  →  1분 30초', String(Math.round(timerBase / 60)));
+      if (inp === null) return;
+      const t = parseTimeInput(inp);
+      if (t === null || t <= 0) { alert('숫자로 입력해 주세요.  예: 5  또는  1:30'); return; }
+      timerBase = t; timeLeft = t; updateTimerDisplay();
+    }
+
     function toggleTimer() {
       const icon = document.getElementById('timer-icon');
       if (isTimerRunning) { clearInterval(timerInterval); icon.className = 'fa-solid fa-play'; }
-      else { timerInterval = setInterval(() => { if (timeLeft > 0) { timeLeft--; updateTimerDisplay(); } else { clearInterval(timerInterval); alert("⏰ 시간 종료!"); } }, 1000); icon.className = 'fa-solid fa-pause'; }
+      else {
+        if (timeLeft <= 0) { timeLeft = timerBase; updateTimerDisplay(); }
+        timerInterval = setInterval(() => { if (timeLeft > 0) { timeLeft--; updateTimerDisplay(); } else { clearInterval(timerInterval); isTimerRunning = false; document.getElementById('timer-icon').className = 'fa-solid fa-play'; alert("⏰ 시간 종료!"); } }, 1000);
+        icon.className = 'fa-solid fa-pause';
+      }
       isTimerRunning = !isTimerRunning;
     }
-    function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timeLeft = 180; updateTimerDisplay(); document.getElementById('timer-icon').className = 'fa-solid fa-play'; }
+    function resetTimer() { stopTimer_(); timeLeft = timerBase; updateTimerDisplay(); }
 
     let isDrawingMode = false, canvas, ctx, drawing = false;
     function initDrawing() {
