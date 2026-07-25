@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>援?뼱 ?섏뾽 ?щ씪?대뱶 ?먮뵒???ㅼ튂 ?덈궡</title>
+<style>
+  :root {
+    --paper: #f5f8fc;
+    --surface: #ffffff;
+    --ink: #0f1729;
+    --ink-soft: #45536b;
+    --muted: #6b7a92;
+    --line: #e3e9f2;
+    --accent: #2f5fe0;
+    --accent-ink: #1c3ea0;
+    --accent-soft: #e9f0ff;
+    --tip: #0c8f63;
+    --tip-soft: #e5f6ee;
+    --warn: #b45c09;
+    --warn-soft: #fbf0e0;
+    --code-bg: #0f1729;
+    --code-ink: #dbe4f4;
+    --code-dim: #7f8fab;
+    --code-key: #8fb7ff;
+    --code-str: #7fd4a8;
+    --code-com: #6a7690;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(15,23,41,.04), 0 8px 28px rgba(15,23,41,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0a1020;
+      --surface: #121c31;
+      --ink: #e9eef8;
+      --ink-soft: #b0bdd2;
+      --muted: #8395ae;
+      --line: #26314a;
+      --accent: #6f97ff;
+      --accent-ink: #bccfff;
+      --accent-soft: #182645;
+      --tip: #34d399;
+      --tip-soft: #10281f;
+      --warn: #f0b25f;
+      --warn-soft: #2a2113;
+      --code-bg: #070c17;
+      --code-ink: #dbe4f4;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f5f8fc; --surface: #ffffff; --ink: #0f1729; --ink-soft: #45536b; --muted: #6b7a92;
+    --line: #e3e9f2; --accent: #2f5fe0; --accent-ink: #1c3ea0; --accent-soft: #e9f0ff;
+    --tip: #0c8f63; --tip-soft: #e5f6ee; --warn: #b45c09; --warn-soft: #fbf0e0;
+    --code-bg: #0f1729; --code-ink: #dbe4f4; --shadow: 0 1px 2px rgba(15,23,41,.04), 0 8px 28px rgba(15,23,41,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper: #0a1020; --surface: #121c31; --ink: #e9eef8; --ink-soft: #b0bdd2; --muted: #8395ae;
+    --line: #26314a; --accent: #6f97ff; --accent-ink: #bccfff; --accent-soft: #182645;
+    --tip: #34d399; --tip-soft: #10281f; --warn: #f0b25f; --warn-soft: #2a2113;
+    --code-bg: #070c17; --code-ink: #dbe4f4; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.003em;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 30px 22px 72px; }
+
+  .topbar { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), #7aa0ff); margin-bottom: 30px; }
+
+  .eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  h1 { font-size: clamp(26px, 5vw, 34px); line-height: 1.22; margin: 0 0 12px; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
+  .lede { font-size: 16.5px; color: var(--ink-soft); margin: 0 0 20px; max-width: 60ch; text-wrap: pretty; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    background: var(--surface); border: 1px solid var(--line); padding: 6px 11px; border-radius: 999px; }
+
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin: 26px 0; box-shadow: var(--shadow); font-size: 14.5px; color: var(--ink-soft); }
+  .note b { color: var(--ink); }
+
+  .steps { display: flex; flex-direction: column; gap: 16px; margin: 26px 0; counter-reset: step; }
+  .step { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 22px 20px 66px; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 18px; top: 20px;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 8px rgba(47,95,224,.35);
+  }
+  .step h3 { margin: 4px 0 8px; font-size: 17.5px; font-weight: 800; letter-spacing: -0.01em; }
+  .step p { margin: 0 0 8px; font-size: 15px; color: var(--ink-soft); }
+  .step p:last-child { margin-bottom: 0; }
+  .step ol, .step ul { margin: 6px 0 0; padding-left: 20px; font-size: 15px; color: var(--ink-soft); }
+  .step li { margin: 5px 0; }
+  .step li::marker { color: var(--muted); }
+
+  kbd { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .84em; background: var(--accent-soft); color: var(--accent-ink);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); padding: 1.5px 6px; border-radius: 5px; white-space: nowrap; font-weight: 600; }
+  .path { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .9em; color: var(--accent-ink); font-weight: 600; }
+
+  /* 肄붾뱶 釉붾줉 */
+  .code-wrap { margin: 14px 0 4px; border-radius: 12px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--code-bg) 60%, var(--line)); }
+  .code-head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: color-mix(in srgb, var(--code-bg) 88%, #fff 12%); padding: 9px 12px; }
+  .code-head .fname { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--code-dim); font-weight: 600; }
+  .copy-btn { font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: #fff;
+    background: var(--accent); border: none; padding: 7px 14px; border-radius: 8px; transition: transform .08s ease, background .15s ease; }
+  .copy-btn:hover { background: #3f6df0; }
+  .copy-btn:active { transform: scale(.96); }
+  .copy-btn.done { background: var(--tip); }
+  pre.code { margin: 0; background: var(--code-bg); color: var(--code-ink); padding: 16px; overflow-x: auto;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12.5px; line-height: 1.65; max-height: 340px; }
+  pre.code::-webkit-scrollbar { height: 10px; width: 10px; }
+  pre.code::-webkit-scrollbar-thumb { background: #33405c; border-radius: 8px; }
+
+  .callout { display: flex; gap: 13px; border-radius: var(--radius); padding: 16px 18px; margin: 22px 0; font-size: 14.5px; line-height: 1.65; }
+  .callout .ico { flex: none; font-size: 18px; line-height: 1.5; }
+  .callout.tip { background: var(--tip-soft); border: 1px solid color-mix(in srgb, var(--tip) 30%, transparent); color: var(--ink); }
+  .callout.warn { background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); color: var(--ink); }
+  .callout b { color: var(--ink); }
+  .callout .lead { font-weight: 800; }
+
+  h2.sec { font-size: 21px; font-weight: 800; letter-spacing: -0.015em; margin: 44px 0 4px; }
+  h2.sec + .sec-sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+  .usage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  @media (max-width: 560px) { .usage { grid-template-columns: 1fr; } }
+  .u-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 15px 16px; box-shadow: var(--shadow); }
+  .u-card .u-t { font-weight: 800; font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .u-card .u-d { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+
+  .faq { margin: 16px 0; }
+  .faq details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 2px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .faq summary { cursor: pointer; font-weight: 700; font-size: 15px; padding: 13px 0; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: '+'; color: var(--accent); font-weight: 800; font-size: 20px; transition: transform .2s ease; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq .a { font-size: 14.5px; color: var(--ink-soft); padding: 0 0 14px; margin: 0; }
+
+  footer { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; line-height: 1.7; word-break: keep-all; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <div class="topbar"></div>
+
+  <p class="eyebrow">?ㅼ튂 ?덈궡 쨌 ?좎깮?섏슜</p>
+  <h1>援?뼱 ?섏뾽 ?щ씪?대뱶 ?먮뵒??br>??援ш? 怨꾩젙???ㅼ튂?섍린</h1>
+  <p class="lede">?섏뾽 以묒뿉 諛붾줈 怨좎퀜 ?곕뒗 ?쇱씠釉??щ씪?대뱶 ?먮뵒?곗엯?덈떎. ?꾨옒 ?쒖꽌?濡??섎㈃ <b>?대뒓 而댄벂?곗뿉?쒕뱺 二쇱냼留??댁뼱</b> ?댁뼱???묒뾽?????덉뼱?? ?щ씪?대뱶??<b>?좎깮??蹂몄씤 援ш? ?쒕씪?대툕</b>?먮쭔 ??λ맗?덈떎.</p>
+
+  <div class="meta">
+    <span class="chip">?깍툘 ??10遺?/span>
+    <span class="chip">?뵎 援ш? 怨꾩젙 ?섎굹</span>
+    <span class="chip">?뮲 ?щ＼ 沅뚯옣</span>
+    <span class="chip">?㎥ ?ㅼ튂??????踰?/span>
+  </div>
+
+  <div class="note">
+    <b>??媛곸옄 ?ㅼ튂?섎굹??</b> 洹몃옒???щ씪?대뱶媛 <b>???쒕씪?대툕?먮쭔</b> ??λ릺怨??꾩쟾???낅┰?곸쑝濡??묐룞?댁슂. ?ㅼ튂??泥섏쓬 ??踰덈퓧?닿퀬, ?댄썑????ν빐 ??二쇱냼留??대㈃ ?⑸땲?? (?붾㈃ 湲곕뒫??媛쒖꽑?섎㈃ ?덈줈怨좎묠留뚯쑝濡??먮룞 諛섏쁺?쇱슂.)
+  </div>
+
+  <div class="steps">
+
+    <div class="step">
+      <h3>?깆뒪?ㅽ겕由쏀듃 ???꾨줈?앺듃 留뚮뱾湲?/h3>
+      <p>?щ＼?먯꽌 <b>??援ш? 怨꾩젙?쇰줈 濡쒓렇??/b>???곹깭濡??꾨옒瑜??쎈땲??</p>
+      <p class="path">script.google.com/home</p>
+      <ul>
+        <li>?쇱そ ??<kbd>+ ???꾨줈?앺듃</kbd> ?대┃</li>
+        <li>?쇱そ ???섏젣紐??녿뒗 ?꾨줈?앺듃?숇? ?뚮윭 ?대쫫??<b>援?뼱?섏뾽?щ씪?대뱶</b>濡?諛붽씀湲?/li>
+      </ul>
+    </div>
+
+    <div class="step">
+      <h3>肄붾뱶 遺숈뿬?ｊ린</h3>
+      <p>媛?대뜲 <span class="path">Code.gs</span> 移몄쓽 ?댁슜??<kbd>Ctrl</kbd>+<kbd>A</kbd> ??<kbd>Delete</kbd>濡?<b>?꾨? 吏?곌퀬</b>, ?꾨옒 <b>肄붾뱶 蹂듭궗</b>瑜??뚮윭 洹??먮━??<kbd>Ctrl</kbd>+<kbd>V</kbd>濡?遺숈뿬?ｌ? ??<kbd>Ctrl</kbd>+<kbd>S</kbd>濡???ν븯?몄슂.</p>
+      <div class="code-wrap">
+        <div class="code-head">
+          <span class="fname">Code.gs</span>
+          <button class="copy-btn" id="copy-btn" type="button">肄붾뱶 蹂듭궗</button>
+        </div>
+        <pre class="code" id="code-view">遺덈윭?ㅻ뒗 以묅?/pre>
+      </div>
+      <p style="margin-top:10px">????諛⑹떇? <b>HTML ?뚯씪???곕줈 留뚮뱾 ?꾩슂媛 ?놁뼱??</b> ?붾㈃? ?명꽣?룹뿉???먮룞?쇰줈 遺덈윭?ㅻ땲 ??肄붾뱶 ?섎굹硫??⑸땲??</p>
+    </div>
+
+    <div class="step">
+      <h3>沅뚰븳 ?뱀씤?섍린 (??踰덈쭔)</h3>
+      <p>?몄쭛湲??꾩そ, ?ㅽ뻾???⑥닔瑜?怨좊Ⅴ??移몄뿉??<kbd>authorizeOnce</kbd>瑜??좏깮?섍퀬 <kbd>???ㅽ뻾</kbd>???꾨쫭?덈떎.</p>
+      <ol>
+        <li>?섍텒??寃?졻?李?????怨꾩젙 ?좏깮</li>
+        <li><b>怨좉툒</b> ??<b>援?뼱?섏뾽?щ씪?대뱶(?덉쟾?섏? ?딆쓬)?쇰줈 ?대룞</b> ??<b>?덉슜</b></li>
+      </ol>
+      <p style="margin-top:8px">?몛 ??寃쎄퀬??<b>?뺤긽?댁뿉??</b> ?⑥씠 留뚮뱺 寃??꾨땲??諛⑷툑 ?닿? 留뚮뱺 ???ㅽ겕由쏀듃?쇱꽌 ?덉쟾?⑸땲?? (?쒕씪?대툕????ν븯怨??붾㈃??遺덈윭?ㅺ린 ?꾪븳 沅뚰븳?댁뿉??)</p>
+    </div>
+
+    <div class="step">
+      <h3>???깆쑝濡?諛고룷?섍린</h3>
+      <p>?ㅻⅨ履????뚮? <kbd>諛고룷</kbd> ??<kbd>??諛고룷</kbd>瑜??꾨Ⅴ怨?</p>
+      <ul>
+        <li>?쇱そ <b>?숋툘(?깅땲諛뷀?</b> ??<b>????/b> ?좏깮</li>
+        <li><b>?ㅽ뻾 怨꾩젙</b>: <b>??/b></li>
+        <li><b>?≪꽭??沅뚰븳???덈뒗 ?ъ슜??/b>: <b>?섎쭔</b></li>
+        <li><kbd>諛고룷</kbd> ?대┃ (沅뚰븳 李쎌씠 ??踰????⑤㈃ ?꾩? 媛숈씠 ?덉슜)</li>
+      </ul>
+      <p style="margin-top:8px">留덉?留됱뿉 ?섏삤??<b>????URL</b>(<span class="path">??exec</span>濡??앸궓)??蹂듭궗?섏꽭??</p>
+    </div>
+
+    <div class="step">
+      <h3>二쇱냼 ??ν븯怨??쒖옉?섍린</h3>
+      <p>蹂듭궗??<b>????二쇱냼瑜??щ＼ 利먭꺼李얘린(遺곷쭏??</b>????ν븯?몄슂. ?앸궗?듬땲?? ?럦</p>
+      <p>?댁젣 ??二쇱냼瑜?<b>?대뒓 而댄벂?곗뿉?쒕뱺</b> ?대㈃ ?댁뼱???묒뾽?????덉뼱?? (洹?而댄벂?곗쓽 ?щ＼??<b>媛숈? 援ш? 怨꾩젙?쇰줈 濡쒓렇??/b>???덉뼱???댁슂.)</p>
+    </div>
+
+  </div>
+
+  <div class="callout tip">
+    <span class="ico">?뮕</span>
+    <div><span class="lead">?낅뜲?댄듃???먮룞?댁뿉??</span> ?붾㈃ 湲곕뒫??媛쒖꽑?섎㈃, ????二쇱냼瑜?<b>?덈줈怨좎묠</b>?섍린留??섎㈃ 理쒖떊 踰꾩쟾???밸땲?? ?ㅼ떆 ?ㅼ튂?섍굅??肄붾뱶瑜?怨좎튌 ?꾩슂媛 ?놁뼱?? (諛섏쁺源뚯? 紐?遺?嫄몃┫ ???덉뼱??)</div>
+  </div>
+
+  <h2 class="sec">?곕뒗 踰??쒕늿??/h2>
+  <p class="sec-sub">?먮뵒???꾩そ ?섏옉?댿?以꾩뿉???щ윭 ?묓뭹???곕줈 愿由ы빐??</p>
+  <div class="usage">
+    <div class="u-card"><p class="u-t">?뱴 ?묓뭹 ?꾪솚</p><p class="u-d">?꾩そ ?쒕∼?ㅼ슫?먯꽌 ?뚯꽌?쒌? ?뚯쭊?щ옒苑껁띿쿂??怨⑤씪 ?꾪솚.</p></div>
+    <div class="u-card"><p class="u-t">?????묓뭹</p><p class="u-d">?대쫫???ｌ쑝硫?鍮??щ씪?대뱶濡????묓뭹???앷꺼??</p></div>
+    <div class="u-card"><p class="u-t">?뮶 ?먮룞 ???/p><p class="u-d">?몄쭛??硫덉텛硫?2珥?????? <b>????λ맖</b> ?쒖떆濡??뺤씤.</p></div>
+    <div class="u-card"><p class="u-t">?뼹截??대?吏 ?ｊ린</p><p class="u-d">?섎궡 PC ?대?吏?숇줈 ?쎌엯. ???ъ쭊? ?먮룞?쇰줈 以꾩뿬 ?ｌ뼱??</p></div>
+    <div class="u-card"><p class="u-t">?뿊截????묓뭹 ??젣</p><p class="u-d">?섏옣 ??젣?숇뒗 ?щ씪?대뱶 ???? 鍮④컙 ?댁??듭? ?묓뭹 ?꾩껜.</p></div>
+    <div class="u-card"><p class="u-t">?렗 ?섏뾽 紐⑤뱶</p><p class="u-d">?섏젒湲겸숇? ?꾨Ⅴ硫??몄쭛李쎌씠 ?④퀬 諛쒗몴 ?붾㈃留?而ㅼ졇??</p></div>
+  </div>
+
+  <h2 class="sec">?먯＜ 臾삳뒗 寃?/h2>
+  <div class="faq">
+    <details>
+      <summary>???щ씪?대뱶???대뵒????λ릺?섏슂?</summary>
+      <p class="a">??援ш? ?쒕씪?대툕??<b>援?뼱?섏뾽?щ씪?대뱶</b> ?대뜑 ?덉뿉, ?묓뭹留덈떎 ?뚯씪 ?섎굹????λ맗?덈떎. ?ㅻⅨ ?щ엺? 蹂????녿뒗 ??媛쒖씤 ?쒕씪?대툕?덉슂. ???대뜑???뚯씪??吏?곕㈃ 洹??묓뭹???щ씪吏??二쇱쓽?섏꽭??</p>
+    </details>
+    <details>
+      <summary>?ㅻⅨ 而댄벂?곗뿉?쒕룄 ?댁뼱???섎굹??</summary>
+      <p class="a">?? 媛숈? 援ш? 怨꾩젙?쇰줈 濡쒓렇?명븳 ?щ＼?먯꽌 ??ν빐 ??????二쇱냼瑜??대㈃, 媛??理쒓렐???묒뾽???묓뭹???댁뼱???대┰?덈떎.</p>
+    </details>
+    <details>
+      <summary>?쁈ndex?쇰뒗 HTML ?뚯씪??李얠쓣 ???놁뒿?덈떎???ㅻ쪟媛 ?좎슂.</summary>
+      <p class="a">??諛⑹떇? HTML ?뚯씪??留뚮뱾吏 ?딆븘?? ?뱀떆 ?덉쟾 ?덈궡濡?留뚮뱶?⑤떎硫? Code.gs瑜???肄붾뱶濡?<b>?듭㎏濡?/b> ?ㅼ떆 遺숈뿬?ｊ퀬 ??ν븳 ???щ같?ы븯?몄슂.</p>
+    </details>
+    <details>
+      <summary>?붾㈃?????④굅????μ씠 ???쇱슂.</summary>
+      <p class="a">??3?④퀎 <b>authorizeOnce</b>瑜??ㅽ뻾??沅뚰븳???ㅼ떆 ?덉슜?덈뒗吏, ??二쇱냼媛 <span class="path">??exec</span>濡??앸굹?붿? ?뺤씤?섏꽭?? 肄붾뱶瑜??덈줈 諛붽엥?ㅻ㈃ <b>諛고룷 ??諛고룷 愿由????섏젙 ????踰꾩쟾 ??諛고룷</b>濡??ㅼ떆 ?щ젮??諛섏쁺?⑸땲??</p>
+    </details>
+  </div>
+
+  <footer>
+    援?뼱 ?섏뾽 ?щ씪?대뱶 ?먮뵒??짤 2026 KIMYERANG.<br>
+    ?좎깮?섎뱾猿섏꽌 ?먯쑀濡?쾶 ?곗떎 ???덉뒿?덈떎. 留뚮뱺 ?댁쓽 ?덈씫 ?놁씠 ?щ같?ы븯嫄곕굹 ?먭린 ??묐Ъ濡?怨듦컻?섎뒗 寃껋? 湲덉??섎ŉ, ????묎텒 ?쒖떆瑜?吏?곗? 留먯븘 二쇱꽭??<br>
+    <span style="opacity:.8">?붾㈃ 肄붾뱶: <a href="https://github.com/yerang-k/korean-slide-editor" target="_blank" rel="noopener">github.com/yerang-k/korean-slide-editor</a></span>
+  </footer>
+</div>
+
+<script type="text/plain" id="code-src">/**
+ * 援?뼱 ?섏뾽 ?쇱씠釉??щ씪?대뱶 ?먮뵒?????쒕쾭 (Google Apps Script)
+ * Copyright (c) 2026 KIMYERANG. 臾대떒 蹂듭젣쨌諛고룷쨌?섏젙 湲덉?
+ *
+ * - ?붾㈃(Index.html)? GitHub?먯꽌 ?ㅼ떆媛꾩쑝濡?遺덈윭?⑤떎.
+ *   (?붾㈃ 肄붾뱶媛 諛붾뚯뼱????Code.gs???먮뙂 ?꾩슂 ?놁씠 ?먮룞 諛섏쁺?쒕떎.)
+ * - ?곗씠?곕뒗 ??援ш? ?쒕씪?대툕???대뜑(援?뼱?섏뾽?щ씪?대뱶) ?덉뿉
+ *   ?묓뭹留덈떎 JSON ?뚯씪 ?섎굹?⑹쑝濡???ν븳?? (?щ윭 ?묓뭹??媛쒕퀎 ???
+ */
+
+// ?붾㈃ 肄붾뱶媛 ?щ씪媛 ?덈뒗 GitHub ?먮낯 二쇱냼
+var GITHUB_HTML_URL = 'https://raw.githubusercontent.com/yerang-k/korean-slide-editor/main/Index.html';
+
+var FOLDER_NAME = '援?뼱?섏뾽?щ씪?대뱶';                 // ?묓뭹?ㅼ씠 ?닿린???쒕씪?대툕 ?대뜑
+var OLD_SINGLE_FILE = '援?뼱?섏뾽?щ씪?대뱶_?숆린??json';  // ?덉쟾 ?⑥씪 ????뚯씪(?덉쑝硫???꺼??
+
+// ?뱀빋 二쇱냼濡??묒냽?섎㈃ GitHub???붾㈃??遺덈윭? 蹂댁뿬以??
+function doGet() {
+  var html = '';
+  try {
+    html = UrlFetchApp.fetch(GITHUB_HTML_URL, { muteHttpExceptions: true }).getContentText();
+  } catch (err) {
+    html = '';
+  }
+  if (!html) {
+    html = '<p style="font-family:sans-serif;padding:40px">?붾㈃??遺덈윭?ㅼ? 紐삵뻽?댁슂. ?좎떆 ???덈줈怨좎묠??二쇱꽭??</p>';
+  }
+  var out = HtmlService.createHtmlOutput(html);
+  out.setTitle('援?뼱 ?섏뾽 ?쇱씠釉??щ씪?대뱶 ?먮뵒??);
+  out.addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  return out;
+}
+
+// 理쒖큹 1???ㅽ뻾?? ?꾩슂??沅뚰븳(?쒕씪?대툕 ?묎렐 쨌 ?몃? ?붿껌)????踰덉뿉 ?뱀씤諛쏅뒗??
+// ?몄쭛湲곗뿉?????⑥닔瑜?怨⑤씪 ???ㅽ뻾 ??沅뚰븳 ?덉슜?섎㈃ 以鍮???
+function authorizeOnce() {
+  UrlFetchApp.fetch(GITHUB_HTML_URL, { muteHttpExceptions: true });
+  getFolder_();
+  return 'OK';
+}
+
+// ---------- ?쒕씪?대툕 ?대뜑/?뚯씪 ?꾩슦誘?----------
+function getFolder_() {
+  var it = DriveApp.getFoldersByName(FOLDER_NAME);
+  while (it.hasNext()) { var f = it.next(); if (!f.isTrashed()) return f; }
+  return DriveApp.createFolder(FOLDER_NAME);
+}
+
+function getDeckFile_(name) {
+  var folder = getFolder_();
+  var it = folder.getFilesByName(name + '.json');
+  while (it.hasNext()) { var f = it.next(); if (!f.isTrashed()) return f; }
+  return null;
+}
+
+// ?덉쟾 ?⑥씪 ?뚯씪???덉쑝硫??대뜑濡???踰덈쭔 ??꺼?⑤떎(湲곗〈 ?묒뾽 蹂댁〈).
+function migrateOldFile_(folder) {
+  var chk = folder.getFiles();
+  if (chk.hasNext()) return; // ?대뜑???대? 萸붽? ?덉쑝硫?嫄대꼫?
+  var it = DriveApp.getFilesByName(OLD_SINGLE_FILE);
+  while (it.hasNext()) {
+    var old = it.next();
+    if (old.isTrashed()) continue;
+    folder.createFile('湲곕낯 ?щ씪?대뱶.json', old.getBlob().getDataAsString('UTF-8'), 'application/json');
+    old.setTrashed(true);
+    return;
+  }
+}
+
+// ---------- ?붾㈃(Index.html)?먯꽌 ?몄텧?섎뒗 ?⑥닔??----------
+function listDecks() {
+  var folder = getFolder_();
+  migrateOldFile_(folder);
+  var it = folder.getFiles();
+  var arr = [];
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.isTrashed()) continue;
+    var nm = f.getName();
+    if (nm.length > 5 && nm.substring(nm.length - 5) === '.json') {
+      arr.push({ name: nm.substring(0, nm.length - 5), updated: f.getLastUpdated().getTime() });
+    }
+  }
+  arr.sort(function (a, b) { return b.updated - a.updated; }); // 理쒓렐 ?섏젙??  return arr;
+}
+
+function loadDeck(name) {
+  var f = getDeckFile_(name);
+  return f ? f.getBlob().getDataAsString('UTF-8') : null;
+}
+
+function saveDeck(name, jsonString) {
+  var f = getDeckFile_(name);
+  if (f) f.setContent(jsonString);
+  else getFolder_().createFile(name + '.json', jsonString, 'application/json');
+  return { ok: true, name: name, savedAt: new Date().toISOString() };
+}
+
+function deleteDeck(name) {
+  var f = getDeckFile_(name);
+  if (f) f.setTrashed(true);
+  return { ok: true };
+}
+
+function renameDeck(oldName, newName) {
+  if (getDeckFile_(newName)) return { ok: false, error: '媛숈? ?대쫫???대? ?덉쓬' };
+  var f = getDeckFile_(oldName);
+  if (!f) return { ok: false, error: '?먮낯 ?놁쓬' };
+  f.setName(newName + '.json');
+  return { ok: true };
+}
+</script>
+
+<script>
+  (function () {
+    var srcEl = document.getElementById('code-src');
+    var raw = (srcEl ? srcEl.textContent : '').replace(/^\r?\n/, '');
+    var view = document.getElementById('code-view');
+    if (view) view.textContent = raw;
+    var btn = document.getElementById('copy-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      function done() {
+        btn.textContent = '蹂듭궗????;
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = '肄붾뱶 蹂듭궗'; btn.classList.remove('done'); }, 1800);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(raw).then(done, selectFallback);
+      } else { selectFallback(); }
+      function selectFallback() {
+        var r = document.createRange(); r.selectNodeContents(view);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        try { document.execCommand('copy'); done(); } catch (e) {}
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
