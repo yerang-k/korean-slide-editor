@@ -334,16 +334,23 @@
         width: 1280, height: 720, center: false, margin: 0.05
       });
       renderRevealSlides();
-      revealEngine.initialize();
       initDrawing();
 
-      bootDecks(); // 작품 목록 불러오기 → 가장 최근 작품 열기
+      // reveal 초기화가 '끝난 뒤'에 데이터를 불러온다.
+      // (초기화가 끝나기 전에 revealEngine.sync()가 호출되면 오류가 나서,
+      //  데모(로컬 저장) 모드에서 초기화가 중단되고 배너·자동저장이 멈추던 문제를 막는다)
+      var _initP = revealEngine.initialize();
+      var _afterReady = function () {
+        bootDecks(); // 작품 목록 불러오기 → 가장 최근 작품 열기
 
-      // 구글 드라이브에 연결 안 됨(=설치 없이 그냥 열어본 데모) → 체험 모드 안내 배너 표시
-      if (!cloudAvailable) {
-        var db = document.getElementById('demo-banner');
-        if (db) db.style.display = 'flex';
-      }
+        // 구글 드라이브에 연결 안 됨(=설치 없이 그냥 열어본 데모) → 체험 모드 안내 배너 표시
+        if (!cloudAvailable) {
+          var db = document.getElementById('demo-banner');
+          if (db) db.style.display = 'flex';
+        }
+      };
+      if (_initP && typeof _initP.then === 'function') _initP.then(_afterReady);
+      else revealEngine.on('ready', _afterReady);
     });
 
     /* ---------- 작품 목록/전환 ---------- */
