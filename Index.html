@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>국어 수업 라이브 슬라이드 에디터</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; display: flex; height: 100vh; overflow: hidden; background: #0f172a; color: #1e293b; }
+
+    #editor-container { width: 45%; height: 100%; display: flex; flex-direction: column; background: #ffffff; border-right: 1px solid #cbd5e1; transition: all 0.3s ease; position: relative; z-index: 10; }
+    #editor-container.collapsed { width: 0; min-width: 0; overflow: hidden; border-right: none; }
+
+    .editor-header { padding: 12px 16px; background: #0f172a; color: white; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .editor-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+    .tool-btn { background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tool-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+    .tool-btn-primary { background: #eff6ff !important; border: 1px solid #3b82f6 !important; color: #1d4ed8 !important; }
+    .tool-btn-primary:hover { background: #dbeafe !important; color: #1e3a8a !important; }
+
+    /* 작품(문서) 관리 바 */
+    .doc-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #1e293b; border-bottom: 1px solid #334155; }
+    .doc-bar select { flex: 0 1 190px; max-width: 190px; padding: 6px 8px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 13px; font-weight: 700; font-family: inherit; text-overflow: ellipsis; }
+    .doc-bar .tool-btn { padding: 6px 9px; font-size: 12px; }
+    #sync-status { margin-left: auto; font-size: 12px; color: #94a3b8; white-space: nowrap; }
+
+    .slide-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
+    .slide-page-indicator { font-size: 14px; font-weight: bold; color: #334155; }
+
+    .custom-toolbar { padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 170px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; border-radius: 6px; border: 1px solid #cbd5e1; overflow: hidden; top: 100%; left: 0; margin-top: 4px; }
+    .dropdown-content a { color: #334155; padding: 10px 12px; text-decoration: none; display: block; font-size: 13px; cursor: pointer; font-weight: 600; }
+    .dropdown-content a:hover { background-color: #f1f5f9; color: #0f172a; }
+
+    .dropdown-grid { display: none; position: absolute; background-color: #ffffff; width: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; border-radius: 6px; padding: 8px; grid-template-columns: repeat(4, 1fr); gap: 4px; border: 1px solid #cbd5e1; top: 100%; left: 0; margin-top: 4px; }
+    .dropdown-grid a { text-align: center; padding: 8px 0; border-radius: 4px; cursor: pointer; font-size: 18px; text-decoration: none; display: block; transition: 0.1s; }
+    .dropdown-grid a:hover { background-color: #f1f5f9; transform: scale(1.1); }
+
+    .dropdown:hover .dropdown-content { display: block; }
+    .dropdown:hover .dropdown-grid { display: grid; }
+
+    .action-bar { padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; gap: 8px; }
+    .btn { border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-apply { background: #2563eb; color: white; flex: 1; }
+    .btn-apply:hover { background: #1d4ed8; }
+    .btn-add { background: #10b981; color: white; }
+    .btn-add:hover { background: #059669; }
+
+    .editor-workspace { flex: 1; padding: 16px; overflow-y: auto; background: #fff; }
+    .note-editor.note-frame { border-radius: 8px; overflow: hidden; }
+
+    .note-btn-group.note-insert { display: none !important; }
+    .note-modal, .modal-backdrop, .note-modal-backdrop { display: none !important; z-index: -9999 !important; visibility: hidden !important; }
+
+    /* 저작권 표시 */
+    .editor-footer { padding: 8px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; line-height: 1.5; word-break: keep-all; }
+
+    #preview-container { flex: 1; height: 100%; position: relative; background: #0f172a; transition: all 0.3s ease; }
+    .reveal-viewport { background: #f8fafc !important; }
+
+    .reveal .slides section, .note-editable { text-align: left; font-family: 'Pretendard', sans-serif; font-size: 24px; color: #334155; line-height: 1.6; }
+    .note-editable { font-size: 16px; }
+
+    .reveal h1, .reveal h2, .reveal h3, .note-editable h1, .note-editable h2, .note-editable h3 { color: #0f172a; font-weight: 700; word-break: keep-all; margin-top: 0; }
+
+    /* 🖼️ 잡지식 배치: 이미지를 왼쪽에 띄우고 글자가 오른쪽 위에서부터 감싸도록 */
+    .reveal img, .note-editable img { max-width: 100%; max-height: 400px; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
+    /* 디자인 상자는 이미지 옆에 끼지 않고 항상 아랫줄부터 시작 */
+    .reveal .card-box, .reveal .bogi-box, .reveal .box-blue, .reveal .box-green, .reveal .box-yellow, .reveal .box-red,
+    .note-editable .card-box, .note-editable .bogi-box, .note-editable .box-blue, .note-editable .box-green, .note-editable .box-yellow, .note-editable .box-red { clear: both; }
+    /* 띄운 이미지가 영역 밖으로 삐져나가지 않도록 감싸기(클리어픽스) */
+    .slide-scroll-area::after, .note-editable::after { content: ""; display: block; clear: both; }
+
+    .reveal table, .note-editable table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9em; border: 1px solid #cbd5e1; clear: both; }
+    .reveal th, .note-editable th { background: #e2e8f0; font-weight: bold; padding: 10px; border: 1px solid #cbd5e1; text-align: center; color: #0f172a; }
+    .reveal td, .note-editable td { padding: 10px; border: 1px solid #cbd5e1; }
+
+    .badge { display: inline-block; padding: 4px 12px; background: #e0e7ff; color: #3730a3; border-radius: 20px; font-size: 0.6em; font-weight: bold; margin-bottom: 12px; }
+
+    .card-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin: 12px 0; }
+    .bogi-box { background: #f1f5f9; border-left: 6px solid #2563eb; border-radius: 4px; padding: 16px; font-size: 0.95em; margin: 12px 0; color: #1e293b; }
+    .box-blue { background: #eff6ff; border-left: 6px solid #3b82f6; border-radius: 4px; padding: 16px; margin: 12px 0; color: #1e293b; }
+    .box-green { background: #f0fdf4; border-left: 6px solid #22c55e; border-radius: 4px; padding: 16px; margin: 12px 0; color: #1e293b; }
+    .box-yellow { background: #fefce8; border-left: 6px solid #eab308; border-radius: 4px; padding: 16px; margin: 12px 0; color: #1e293b; }
+    .box-red { background: #fef2f2; border-left: 6px solid #ef4444; border-radius: 4px; padding: 16px; margin: 12px 0; color: #1e293b; }
+
+    .reveal .slides section { height: 100%; }
+    .slide-scroll-area { height: 100%; overflow-y: auto; padding: 30px 50px; box-sizing: border-box; }
+    .slide-scroll-area::-webkit-scrollbar { width: 10px; }
+    .slide-scroll-area::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .slide-scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    .slide-scroll-area::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    #control-widget { position: absolute; top: 16px; right: 16px; z-index: 100; background: rgba(15, 23, 42, 0.9); color: #fff; padding: 8px 16px; border-radius: 30px; display: flex; align-items: center; gap: 12px; font-size: 13px; backdrop-filter: blur(4px); }
+    #control-widget button { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 4px; }
+    #control-widget button.active { color: #ef4444; font-weight: bold; }
+    #chalkboard-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 90; pointer-events: none; }
+    #chalkboard-canvas.active { pointer-events: auto; cursor: crosshair; }
+  </style>
+</head>
+<body>
+
+  <input type="file" id="hiddenImageInput" accept="image/*" style="display:none;" onchange="handleDirectImageUpload(event)">
+
+  <div id="editor-container">
+    <div class="editor-header">
+      <h2><i class="fa-solid fa-graduation-cap"></i> 국어 수업 슬라이드 에디터</h2>
+      <button class="tool-btn" onclick="toggleEditor()" style="padding:4px 8px; font-size:12px;"><i class="fa-solid fa-angles-left"></i> 접기</button>
+    </div>
+
+    <!-- 작품(문서) 선택·관리 -->
+    <div class="doc-bar">
+      <i class="fa-solid fa-book-open" style="color:#94a3b8;" title="작품"></i>
+      <select id="deckSelect" onchange="switchDeck(this.value)" title="작품 선택"></select>
+      <button class="tool-btn" onclick="newDeck()" title="새 작품 만들기"><i class="fa-solid fa-plus"></i> 새 작품</button>
+      <button class="tool-btn" onclick="renameCurrentDeck()" title="현재 작품 이름 바꾸기"><i class="fa-solid fa-pen"></i></button>
+      <button class="tool-btn" onclick="deleteCurrentDeck()" title="현재 작품 삭제" style="color:#ef4444;"><i class="fa-solid fa-trash"></i></button>
+      <span id="sync-status">⏳ 준비 중…</span>
+      <button class="tool-btn" onclick="saveNow(true)" title="지금 저장"><i class="fa-solid fa-cloud-arrow-up"></i></button>
+      <button class="tool-btn" onclick="reloadCurrentDeck()" title="다시 불러오기"><i class="fa-solid fa-rotate"></i></button>
+    </div>
+
+    <div class="slide-nav">
+      <button class="tool-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i> 이전</button>
+      <span class="slide-page-indicator" id="slideIndicator">슬라이드 1 / 2</span>
+      <button class="tool-btn" onclick="nextSlide()">다음 <i class="fa-solid fa-chevron-right"></i></button>
+      <button class="tool-btn" style="color:#ef4444" onclick="deleteCurrentSlide()" title="이 슬라이드(장) 삭제"><i class="fa-solid fa-xmark"></i> 장 삭제</button>
+    </div>
+
+    <div class="custom-toolbar">
+      <button class="tool-btn" onclick="insertBadge()"><i class="fa-solid fa-tag"></i> 태그</button>
+
+      <div class="dropdown">
+        <button class="tool-btn"><i class="fa-solid fa-shapes"></i> 디자인 상자 ▾</button>
+        <div class="dropdown-content">
+          <a onclick="insertBox('card')">⬜ 기본 하얀색 카드</a>
+          <a onclick="insertBox('bogi')">🟦 파란선 &lt;보기&gt;</a>
+          <a onclick="insertBox('blue')">📘 파란색 상자</a>
+          <a onclick="insertBox('green')">✅ 초록색 상자</a>
+          <a onclick="insertBox('yellow')">💡 노란색 상자</a>
+          <a onclick="insertBox('red')">🚨 빨간색 상자</a>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="tool-btn"><i class="fa-solid fa-face-smile"></i> 아이콘 ▾</button>
+        <div class="dropdown-grid">
+          <a onclick="insertIcon('📌')" title="핀">📌</a>
+          <a onclick="insertIcon('📖')" title="책">📖</a>
+          <a onclick="insertIcon('🔍')" title="돋보기">🔍</a>
+          <a onclick="insertIcon('💡')" title="전구">💡</a>
+          <a onclick="insertIcon('✏️')" title="연필">✏️</a>
+          <a onclick="insertIcon('📝')" title="메모">📝</a>
+          <a onclick="insertIcon('✅')" title="체크">✅</a>
+          <a onclick="insertIcon('🚨')" title="경고">🚨</a>
+          <a onclick="insertIcon('🎯')" title="과녁">🎯</a>
+          <a onclick="insertIcon('⭐️')" title="별">⭐️</a>
+          <a onclick="insertIcon('🗣️')" title="말하기">🗣️</a>
+          <a onclick="insertIcon('💬')" title="생각">💬</a>
+        </div>
+      </div>
+
+      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenImageInput').click();">
+        <i class="fa-solid fa-image"></i> 내 PC 이미지
+      </button>
+    </div>
+
+    <div class="editor-workspace">
+      <div id="summernote"></div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-add" onclick="addSlide()"><i class="fa-solid fa-plus"></i> 슬라이드 추가</button>
+      <button class="btn btn-apply" onclick="updateSlides()"><i class="fa-solid fa-circle-check"></i> 화면에 즉시 적용</button>
+    </div>
+
+    <div class="editor-footer">
+      국어 수업 슬라이드 에디터 © 2026 KIMYERANG.<br>
+      본 앱은 자유롭게 사용할 수 있으나, 저작자의 허락 없는<br>
+      복제·배포·수정은 금지합니다.
+    </div>
+  </div>
+
+  <div id="preview-container">
+    <div id="control-widget">
+      <button onclick="toggleEditor()"><i class="fa-solid fa-desktop"></i> 수업 모드</button>
+      <span style="color:#475569">|</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-clock"></i>
+        <span id="timer-display" style="font-family:monospace; font-size:15px;">03:00</span>
+        <button onclick="toggleTimer()"><i id="timer-icon" class="fa-solid fa-play"></i></button>
+        <button onclick="resetTimer()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+      <span style="color:#475569">|</span>
+      <button id="draw-toggle-btn" onclick="toggleDrawingMode()"><i class="fa-solid fa-pen"></i> 판서(P)</button>
+      <button onclick="clearCanvas()"><i class="fa-solid fa-eraser"></i> 지우기(C)</button>
+    </div>
+
+    <canvas id="chalkboard-canvas"></canvas>
+
+    <div class="reveal">
+      <div class="slides" id="slides-target"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+
+  <script>
+    /* =========================================================
+       저장/동기화 (작품별 개별 저장)
+       - 구글 앱스스크립트 웹앱으로 열면: 내 구글 드라이브 폴더에 작품마다 파일 하나씩 저장
+       - 그냥 로컬 파일로 열면: 이 브라우저(localStorage)에만 임시 저장
+       ========================================================= */
+    const cloudAvailable = (typeof google !== 'undefined' && google.script && google.script.run);
+    const LKEY = 'korean-slide-decks-v2'; // 로컬(브라우저) 저장 키
+
+    const defaultSlides = [
+      `<span class="badge">1단계 | 작품 개관</span><h2>📖 윤동주 - 「서시」</h2><div class="box-green"><b>✅ 핵심 정리</b><br><ul><li><b>갈래:</b> 서정시, 순수시</li><li><b>주제:</b> <span style="color: #ef4444;"><u>부끄러움 없는 삶의 의지</u></span></li></ul></div><p><br></p>`,
+      `<span class="badge">2단계 | &lt;보기&gt; 분석</span><h2>🔍 출제 포인트 점검</h2><div class="bogi-box"><b>&lt;보 기&gt;</b><br>윤동주의 시에서 <span style="font-size: 24px; color: #2563eb;">'잎새에 이는 바람'</span>은 자아에게 괴로움을 주는 미세한 자극을 의미한다.</div><p><br></p>`
+    ];
+
+    let decks = [];            // [{name, updated}]  (최근 수정순)
+    let currentDeck = null;    // 현재 열려 있는 작품 이름
+    let slidesData = defaultSlides.slice();
+    let currentSlideIndex = 0;
+    let isLoading = true;
+    let saveTimer = null;
+
+    /* ---------- 저장소 추상화 (클라우드 / 로컬 공용) ---------- */
+    function localAll() { try { return JSON.parse(localStorage.getItem(LKEY)) || {}; } catch (e) { return {}; } }
+    function localSet(o) { try { localStorage.setItem(LKEY, JSON.stringify(o)); } catch (e) {} }
+    function localListArr() {
+      const all = localAll();
+      return Object.keys(all).map(function (n) { return { name: n, updated: all[n].updated || 0 }; })
+        .sort(function (a, b) { return b.updated - a.updated; });
+    }
+
+    function apiList(cb) {
+      if (cloudAvailable) google.script.run.withSuccessHandler(cb).withFailureHandler(function () { cb(localListArr()); }).listDecks();
+      else cb(localListArr());
+    }
+    function apiLoad(name, cb) {
+      if (cloudAvailable) google.script.run.withSuccessHandler(cb).withFailureHandler(function () { const a = localAll(); cb(a[name] ? a[name].payload : null); }).loadDeck(name);
+      else { const a = localAll(); cb(a[name] ? a[name].payload : null); }
+    }
+    function apiSave(name, payload, ok, fail) {
+      try { const a = localAll(); a[name] = { payload: payload, updated: Date.now() }; localSet(a); } catch (e) {} // 항상 로컬 백업
+      if (cloudAvailable) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).saveDeck(name, payload);
+      else ok({ ok: true, savedAt: new Date().toISOString() });
+    }
+    function apiDelete(name, cb) {
+      try { const a = localAll(); delete a[name]; localSet(a); } catch (e) {}
+      if (cloudAvailable) google.script.run.withSuccessHandler(cb).withFailureHandler(function () { cb({ ok: true }); }).deleteDeck(name);
+      else cb({ ok: true });
+    }
+    function apiRename(oldN, newN, cb) {
+      try { const a = localAll(); if (a[oldN]) { a[newN] = a[oldN]; delete a[oldN]; localSet(a); } } catch (e) {}
+      if (cloudAvailable) google.script.run.withSuccessHandler(cb).withFailureHandler(function () { cb({ ok: true }); }).renameDeck(oldN, newN);
+      else cb({ ok: true });
+    }
+
+    let revealEngine;
+
+    $(document).ready(function () {
+      $('#summernote').summernote({
+        height: '100%',
+        minHeight: 400,
+        lang: 'ko-KR',
+        dialogsInBody: true,
+        toolbar: [
+          ['fontname', ['fontname']],
+          ['fontsize', ['fontsize']],
+          ['style', ['bold', 'italic', 'underline', 'clear']],
+          ['color', ['color']],
+          ['para', ['ul', 'ol', 'paragraph']],
+          ['table', ['table']]
+        ],
+        fontNames: ['Pretendard', 'Nanum Myeongjo', 'Gowun Batang', 'Arial'],
+        fontNamesIgnoreCheck: ['Pretendard', 'Nanum Myeongjo', 'Gowun Batang'],
+        callbacks: {
+          onChange: function (contents) {
+            if (isLoading) return;
+            slidesData[currentSlideIndex] = contents;
+            scheduleSave();
+          },
+          onBlur: function () { $('#summernote').summernote('saveRange'); },
+          onKeyup: function () { $('#summernote').summernote('saveRange'); },
+          onMouseup: function () { $('#summernote').summernote('saveRange'); }
+        }
+      });
+
+      revealEngine = new Reveal({
+        embedded: true, hash: false, slideNumber: 'c/t', transition: 'slide',
+        width: 1280, height: 720, center: false, margin: 0.05
+      });
+      renderRevealSlides();
+      revealEngine.initialize();
+      initDrawing();
+
+      bootDecks(); // 작품 목록 불러오기 → 가장 최근 작품 열기
+    });
+
+    /* ---------- 작품 목록/전환 ---------- */
+    function bootDecks() {
+      setStatus('loading');
+      apiList(function (list) {
+        decks = (list || []).slice();
+        if (decks.length === 0) createDefaultDeck();
+        else openDeck(decks[0].name); // 가장 최근에 수정한 작품
+      });
+    }
+
+    function createDefaultDeck() {
+      currentDeck = '첫 슬라이드';
+      slidesData = defaultSlides.slice();
+      currentSlideIndex = 0;
+      isLoading = false;
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      decks = [{ name: currentDeck, updated: Date.now() }];
+      renderDeckSelect();
+      saveNow(false); // 파일 생성
+    }
+
+    function openDeck(name) {
+      isLoading = true;
+      setStatus('loading');
+      currentDeck = name;
+      renderDeckSelect();
+      apiLoad(name, function (raw) { applyLoaded(raw); });
+    }
+
+    function applyLoaded(raw) {
+      let sl = null;
+      try { if (raw) { const p = JSON.parse(raw); if (p && Array.isArray(p.slides) && p.slides.length) sl = p.slides; } } catch (e) {}
+      slidesData = sl || defaultSlides.slice();
+      currentSlideIndex = 0;
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      isLoading = false;
+      renderDeckSelect();
+      setStatus(cloudAvailable ? 'saved' : 'localOnly');
+    }
+
+    function switchDeck(name) {
+      if (name === currentDeck) return;
+      saveNow(false);   // 현재 작품 저장 후
+      openDeck(name);   // 새 작품 열기
+    }
+
+    function newDeck() {
+      const name = (prompt('새 작품 이름을 입력하세요 (예: 진달래꽃)') || '').trim();
+      if (!name) return;
+      if (name === currentDeck || decks.some(function (d) { return d.name === name; })) { alert('같은 이름의 작품이 이미 있어요.'); return; }
+      saveNow(false); // 현재 작품 저장
+      currentDeck = name;
+      slidesData = ['<h2>📌 ' + escapeHtml(name) + '</h2><p>내용을 입력하세요.</p><p><br></p>'];
+      currentSlideIndex = 0;
+      isLoading = false;
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      decks.unshift({ name: name, updated: Date.now() });
+      renderDeckSelect();
+      saveNow(false); // 새 작품 파일 생성
+    }
+
+    function renameCurrentDeck() {
+      const name = (prompt('새 이름을 입력하세요', currentDeck) || '').trim();
+      if (!name || name === currentDeck) return;
+      if (decks.some(function (d) { return d.name === name; })) { alert('같은 이름의 작품이 이미 있어요.'); return; }
+      const old = currentDeck;
+      setStatus('saving');
+      apiRename(old, name, function (res) {
+        if (res && res.ok === false) { alert('이름 변경 실패: ' + (res.error || '')); setStatus(cloudAvailable ? 'saved' : 'localOnly'); return; }
+        decks.forEach(function (d) { if (d.name === old) d.name = name; });
+        currentDeck = name;
+        renderDeckSelect();
+        setStatus(cloudAvailable ? 'saved' : 'localOnly');
+      });
+    }
+
+    function deleteCurrentDeck() {
+      if (!currentDeck) return;
+      if (!confirm("'" + currentDeck + "' 작품 전체를 삭제할까요? 되돌릴 수 없어요.")) return;
+      const del = currentDeck;
+      apiDelete(del, function () {
+        decks = decks.filter(function (d) { return d.name !== del; });
+        if (decks.length === 0) createDefaultDeck();
+        else openDeck(decks[0].name);
+      });
+    }
+
+    function reloadCurrentDeck() {
+      if (!confirm('저장된 내용을 다시 불러올까요?\n(아직 저장 안 된 변경은 사라질 수 있어요)')) return;
+      openDeck(currentDeck);
+    }
+
+    function renderDeckSelect() {
+      const sel = document.getElementById('deckSelect');
+      if (!sel) return;
+      sel.innerHTML = '';
+      let has = false;
+      decks.forEach(function (d) {
+        const o = document.createElement('option');
+        o.value = d.name; o.textContent = d.name;
+        if (d.name === currentDeck) { o.selected = true; has = true; }
+        sel.appendChild(o);
+      });
+      if (currentDeck && !has) {
+        const o = document.createElement('option');
+        o.value = currentDeck; o.textContent = currentDeck; o.selected = true;
+        sel.appendChild(o);
+      }
+    }
+
+    /* ---------- 저장 ---------- */
+    function scheduleSave() {
+      if (isLoading || !currentDeck) return;
+      setStatus('editing');
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { saveNow(false); }, 2000);
+    }
+
+    function saveNow(manual) {
+      if (isLoading || !currentDeck) return;
+      clearTimeout(saveTimer);
+      slidesData[currentSlideIndex] = $('#summernote').summernote('code');
+      const payload = JSON.stringify({ v: 2, name: currentDeck, slides: slidesData, savedAt: new Date().toISOString() });
+      setStatus('saving');
+      apiSave(currentDeck, payload, function (res) {
+        const now = Date.now();
+        let found = false;
+        decks.forEach(function (d) { if (d.name === currentDeck) { d.updated = now; found = true; } });
+        if (!found) decks.unshift({ name: currentDeck, updated: now });
+        setStatus(cloudAvailable ? 'saved' : 'localOnly', res && res.savedAt);
+      }, function () { setStatus('error'); });
+      if (manual && !cloudAvailable) {
+        alert('지금은 구글 드라이브에 연결돼 있지 않아 이 브라우저에만 저장했습니다.\n\n다른 컴퓨터와 이어서 쓰려면 구글 드라이브에 연결된 "웹앱 주소"로 열어 주세요.');
+      }
+    }
+
+    /* ---------- 상태 표시 ---------- */
+    function setStatus(state, savedAt) {
+      const el = document.getElementById('sync-status');
+      if (!el) return;
+      let t = '', c = '#94a3b8';
+      const hhmm = savedAt ? new Date(savedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+      switch (state) {
+        case 'loading':   t = '⏳ 불러오는 중…'; break;
+        case 'editing':   t = '✏️ 편집 중…'; c = '#f59e0b'; break;
+        case 'saving':    t = '☁️ 저장 중…'; c = '#38bdf8'; break;
+        case 'saved':     t = '✅ 저장됨' + (hhmm ? ' ' + hhmm : ''); c = '#34d399'; break;
+        case 'localOnly': t = '💾 이 브라우저에만 저장'; c = '#fbbf24'; break;
+        case 'error':     t = '⚠️ 저장 실패(임시 보관)'; c = '#f87171'; break;
+      }
+      el.textContent = t; el.style.color = c;
+    }
+
+    // 다른 창으로 넘어가거나 창을 닫을 때 한 번 더 저장(안전장치)
+    document.addEventListener('visibilitychange', function () { if (document.hidden && !isLoading) saveNow(false); });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+
+    /* =========================================================
+       이미지 넣기 — 큰 사진은 자동으로 줄여서 넣는다
+       ========================================================= */
+    function handleDirectImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+          const maxW = 1280;
+          let w = img.width, h = img.height;
+          if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          $('#summernote').summernote('restoreRange');
+          $('#summernote').summernote('focus');
+          $('#summernote').summernote('insertImage', dataUrl);
+          updateSlides();
+        };
+        img.onerror = function () {
+          $('#summernote').summernote('restoreRange');
+          $('#summernote').summernote('focus');
+          $('#summernote').summernote('insertImage', event.target.result);
+          updateSlides();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    /* =========================================================
+       슬라이드(장) 편집
+       ========================================================= */
+    function loadSlideToEditor() {
+      const content = slidesData[currentSlideIndex] || '';
+      $('#summernote').summernote('code', content);
+      document.getElementById('slideIndicator').innerText = `슬라이드 ${currentSlideIndex + 1} / ${slidesData.length}`;
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 0) { currentSlideIndex--; loadSlideToEditor(); revealEngine.slide(currentSlideIndex); }
+    }
+    function nextSlide() {
+      if (currentSlideIndex < slidesData.length - 1) { currentSlideIndex++; loadSlideToEditor(); revealEngine.slide(currentSlideIndex); }
+    }
+
+    function addSlide() {
+      slidesData.push(`<h2>📌 새 슬라이드</h2><p>내용을 입력하세요.</p>`);
+      currentSlideIndex = slidesData.length - 1;
+      loadSlideToEditor(); updateSlides();
+    }
+
+    function deleteCurrentSlide() {
+      if (slidesData.length <= 1) return alert("최소 1개의 슬라이드(장)는 유지해야 합니다. (작품 전체 삭제는 위쪽 '작품 삭제' 버튼)");
+      slidesData.splice(currentSlideIndex, 1);
+      if (currentSlideIndex >= slidesData.length) currentSlideIndex = slidesData.length - 1;
+      loadSlideToEditor(); updateSlides();
+    }
+
+    function insertIcon(iconText) {
+      $('#summernote').summernote('restoreRange');
+      $('#summernote').summernote('focus');
+      $('#summernote').summernote('insertText', iconText);
+      updateSlides();
+    }
+
+    function insertBadge() {
+      $('#summernote').summernote('restoreRange');
+      $('#summernote').summernote('focus');
+      const span = document.createElement('span');
+      span.className = 'badge';
+      span.innerText = '새 단계 태그';
+      $('#summernote').summernote('insertNode', span);
+      const space = document.createTextNode(' ');
+      $('#summernote').summernote('insertNode', space);
+      updateSlides();
+    }
+
+    function insertBox(type) {
+      $('#summernote').summernote('restoreRange');
+      $('#summernote').summernote('focus');
+
+      let innerHTML = '', className = '';
+      if (type === 'card') { className = 'card-box'; innerHTML = '<h3>📌 핵심 제목</h3><ul><li>내용을 입력하세요.</li></ul>'; }
+      else if (type === 'bogi') { className = 'bogi-box'; innerHTML = '<b>&lt;보 기&gt;</b><br>여기에 보기 내용을 입력하세요.'; }
+      else if (type === 'blue') { className = 'box-blue'; innerHTML = '<b>📘 참고 포인트</b><br>내용을 입력하세요.'; }
+      else if (type === 'green') { className = 'box-green'; innerHTML = '<b>✅ 핵심 정리</b><br>내용을 입력하세요.'; }
+      else if (type === 'yellow') { className = 'box-yellow'; innerHTML = '<b>💡 꿀팁/주의</b><br>내용을 입력하세요.'; }
+      else if (type === 'red') { className = 'box-red'; innerHTML = '<b>🚨 오답 주의</b><br>내용을 입력하세요.'; }
+
+      const divNode = document.createElement('div');
+      divNode.className = className; divNode.innerHTML = innerHTML;
+      const pNode = document.createElement('p'); pNode.innerHTML = '<br>';
+      $('#summernote').summernote('insertNode', divNode);
+      $('#summernote').summernote('insertNode', pNode);
+      updateSlides();
+    }
+
+    function renderRevealSlides() {
+      const slidesContainer = document.getElementById('slides-target');
+      let htmlContent = '';
+      slidesData.forEach(function (slide) { htmlContent += `<section><div class="slide-scroll-area">${slide}</div></section>`; });
+      slidesContainer.innerHTML = htmlContent;
+    }
+
+    function updateSlides() {
+      slidesData[currentSlideIndex] = $('#summernote').summernote('code');
+      renderRevealSlides();
+      revealEngine.sync();
+      revealEngine.slide(currentSlideIndex);
+      scheduleSave();
+    }
+
+    function toggleEditor() {
+      const container = document.getElementById('editor-container');
+      container.classList.toggle('collapsed');
+      setTimeout(() => { revealEngine.layout(); resizeCanvas(); }, 300);
+    }
+
+    let timerInterval, timeLeft = 180, isTimerRunning = false;
+    function updateTimerDisplay() { document.getElementById('timer-display').innerText = `${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`; }
+    function toggleTimer() {
+      const icon = document.getElementById('timer-icon');
+      if (isTimerRunning) { clearInterval(timerInterval); icon.className = 'fa-solid fa-play'; }
+      else { timerInterval = setInterval(() => { if (timeLeft > 0) { timeLeft--; updateTimerDisplay(); } else { clearInterval(timerInterval); alert("⏰ 시간 종료!"); } }, 1000); icon.className = 'fa-solid fa-pause'; }
+      isTimerRunning = !isTimerRunning;
+    }
+    function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timeLeft = 180; updateTimerDisplay(); document.getElementById('timer-icon').className = 'fa-solid fa-play'; }
+
+    let isDrawingMode = false, canvas, ctx, drawing = false;
+    function initDrawing() {
+      canvas = document.getElementById('chalkboard-canvas'); ctx = canvas.getContext('2d'); resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+      canvas.addEventListener('mousedown', (e) => { if (!isDrawingMode) return; drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+      canvas.addEventListener('mousemove', (e) => { if (!drawing || !isDrawingMode) return; ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); });
+      canvas.addEventListener('mouseup', () => drawing = false);
+      window.addEventListener('keydown', (e) => {
+        if (e.target.closest('.note-editable') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key.toLowerCase() === 'p') toggleDrawingMode();
+        else if (e.key.toLowerCase() === 'c') clearCanvas();
+      });
+    }
+    function toggleDrawingMode() {
+      isDrawingMode = !isDrawingMode; const btn = document.getElementById('draw-toggle-btn'); canvas.classList.toggle('active', isDrawingMode);
+      btn.classList.toggle('active', isDrawingMode); btn.innerHTML = isDrawingMode ? '<i class="fa-solid fa-pen"></i> 판서 켜짐(P)' : '<i class="fa-solid fa-pen"></i> 판서(P)';
+    }
+    function clearCanvas() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    function resizeCanvas() { const container = document.getElementById('preview-container'); canvas.width = container.clientWidth; canvas.height = container.clientHeight; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3; ctx.lineCap = 'round'; }
+  </script>
+</body>
+</html>
