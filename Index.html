@@ -138,6 +138,9 @@
     .board-swatch.sel { outline: 3px solid #38bdf8; outline-offset: 1px; }
     #board-surface { flex: 1; position: relative; overflow: hidden; background: #ffffff; }
     #board-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+    .board-resize { position: absolute; top: 0; left: 0; width: 12px; height: 100%; cursor: ew-resize; z-index: 210; touch-action: none; }
+    .board-resize::before { content: ''; position: absolute; top: 50%; left: 3px; transform: translateY(-50%); width: 4px; height: 48px; border-radius: 3px; background: #94a3b8; opacity: .4; transition: opacity .15s; }
+    .board-resize:hover::before { opacity: 1; }
   </style>
 </head>
 <body>
@@ -261,6 +264,7 @@
   </div>
 
   <div id="board-container">
+    <div class="board-resize" title="← 드래그해서 너비 조절"></div>
     <div class="board-header">
       <h2><i class="fa-solid fa-chalkboard-user"></i> 판서판</h2>
       <button class="tool-btn" onclick="toggleBoard()" style="padding:4px 8px; font-size:12px;"><i class="fa-solid fa-angles-right"></i> 닫기</button>
@@ -279,6 +283,10 @@
       <span class="bt-sep"></span>
       <button class="tool-btn" id="board-erase-btn" onclick="toggleBoardEraser()"><i class="fa-solid fa-eraser"></i> 지우개</button>
       <button class="tool-btn" onclick="clearBoard()"><i class="fa-solid fa-trash"></i> 전체 지우기</button>
+      <span class="bt-sep"></span>
+      <span class="bt-label">너비</span>
+      <button class="tool-btn" onclick="setBoardWidth(50)" title="화면 절반">절반</button>
+      <button class="tool-btn" onclick="setBoardWidth(100)" title="화면 전체(편집창까지 덮음)">전체</button>
     </div>
     <div id="board-surface">
       <canvas id="board-canvas"></canvas>
@@ -981,6 +989,7 @@
       boardCanvas.addEventListener('touchmove', move, { passive: false });
       boardCanvas.addEventListener('touchend', up);
       window.addEventListener('resize', function () { if (boardOpen) resizeBoardCanvas(); });
+      initBoardResize();
     }
 
     function resizeBoardCanvas() {
@@ -991,7 +1000,36 @@
       let data = null;
       try { if (boardCanvas.width && boardCanvas.height) data = boardCanvas.toDataURL(); } catch (e) {}
       boardCanvas.width = w; boardCanvas.height = h;
-      if (data) { const im = new Image(); im.onload = function () { boardCtx.drawImage(im, 0, 0, w, h); }; im.src = data; }
+      // 그림은 원래 크기 그대로(왜곡 없이) 다시 얹는다
+      if (data) { const im = new Image(); im.onload = function () { boardCtx.drawImage(im, 0, 0); }; im.src = data; }
+    }
+
+    // 너비 프리셋 (50: 절반, 100: 전체=편집창까지 덮음)
+    function setBoardWidth(pct) {
+      const c = document.getElementById('board-container');
+      c.style.width = pct + '%';
+      setTimeout(resizeBoardCanvas, 30);
+    }
+
+    // 왼쪽 가장자리 드래그로 너비 자유 조절
+    function initBoardResize() {
+      const c = document.getElementById('board-container');
+      const grip = c.querySelector('.board-resize');
+      if (!grip) return;
+      let resizing = false;
+      function apply(clientX) {
+        let w = window.innerWidth - clientX;
+        const min = Math.round(window.innerWidth * 0.25);
+        if (w < min) w = min;
+        if (w > window.innerWidth) w = window.innerWidth;
+        c.style.width = w + 'px';
+      }
+      grip.addEventListener('mousedown', function (e) { resizing = true; document.body.style.userSelect = 'none'; e.preventDefault(); });
+      window.addEventListener('mousemove', function (e) { if (resizing) apply(e.clientX); });
+      window.addEventListener('mouseup', function () { if (resizing) { resizing = false; document.body.style.userSelect = ''; resizeBoardCanvas(); } });
+      grip.addEventListener('touchstart', function (e) { resizing = true; e.preventDefault(); }, { passive: false });
+      window.addEventListener('touchmove', function (e) { if (resizing && e.touches[0]) { apply(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+      window.addEventListener('touchend', function () { if (resizing) { resizing = false; resizeBoardCanvas(); } });
     }
 
     function setBoard(color) {
