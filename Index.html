@@ -78,7 +78,9 @@
     .reveal h1, .reveal h2, .reveal h3, .note-editable h1, .note-editable h2, .note-editable h3 { color: #0f172a; font-weight: 700; word-break: keep-all; margin-top: 0; }
 
     /* 🖼️ 잡지식 배치: 이미지를 왼쪽에 띄우고 글자가 오른쪽 위에서부터 감싸도록 */
-    .reveal img, .note-editable img { max-width: 100%; height: auto; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
+    .reveal img, .note-editable img { max-width: 100%; max-height: none; height: auto; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
+    /* reveal 기본 CSS가 이미지에 max-height:95%를 걸어 세로로 긴 이미지가 눌리는 것 방지 */
+    .reveal .slides section img { max-height: none; }
     /* 디자인 상자는 이미지 옆에 끼지 않고 항상 아랫줄부터 시작 */
     .reveal .card-box, .reveal .bogi-box, .reveal .box-blue, .reveal .box-green, .reveal .box-yellow, .reveal .box-red,
     .note-editable .card-box, .note-editable .bogi-box, .note-editable .box-blue, .note-editable .box-green, .note-editable .box-yellow, .note-editable .box-red { clear: both; }
