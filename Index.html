@@ -132,6 +132,7 @@
   </div>
 
   <input type="file" id="hiddenImageInput" accept="image/*" style="display:none;" onchange="handleDirectImageUpload(event)">
+  <input type="file" id="hiddenPdfInput" accept="application/pdf,.pdf" style="display:none;" onchange="handlePdfUpload(event)">
 
   <div id="editor-container">
     <div class="editor-header">
@@ -199,6 +200,8 @@
 
       <button class="tool-btn" onclick="resizeSelImg(-10)" title="클릭해 둔 이미지를 작게"><i class="fa-solid fa-magnifying-glass-minus"></i> 이미지</button>
       <button class="tool-btn" onclick="resizeSelImg(10)" title="클릭해 둔 이미지를 크게"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+      <button class="tool-btn" onclick="fitImgWidth()" title="이미지를 화면 폭에 꽉 차게"><i class="fa-solid fa-arrows-left-right-to-line"></i> 폭 맞춤</button>
+      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenPdfInput').click();" title="PDF를 고화질로 슬라이드에 넣기"><i class="fa-solid fa-file-pdf"></i> PDF 넣기</button>
     </div>
 
     <div class="editor-workspace">
@@ -532,7 +535,7 @@
       reader.onload = function (event) {
         const img = new Image();
         img.onload = function () {
-          const maxW = 1600; // 학습지 같은 글자 많은 스캔도 읽히도록 넉넉하게
+          const maxW = 2400; // 확대해도 덜 깨지도록 해상도를 넉넉하게
           let w = img.width, h = img.height;
           if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
           const canvas = document.createElement('canvas');
@@ -541,8 +544,12 @@
           const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           $('#summernote').summernote('restoreRange');
           $('#summernote').summernote('focus');
-          $('#summernote').summernote('insertImage', dataUrl);
-          updateSlides();
+          $('#summernote').summernote('insertImage', dataUrl, function ($image) {
+            // 학습지처럼 큰 이미지는 넣자마자 화면 폭에 꽉 차게(수업 모드에서도 그대로 꽉 참)
+            if (w >= 700) $image.attr('data-w', 100).css({ width: '100%', height: 'auto', maxWidth: '100%' });
+            lastSelectedImg = $image[0];
+            updateSlides();
+          });
         };
         img.onerror = function () {
           $('#summernote').summernote('restoreRange');
@@ -557,16 +564,22 @@
     }
 
     // 클릭해 둔 이미지의 크기를 % 단위로 조절 (delta: +10 크게 / -10 작게)
-    function resizeSelImg(delta) {
+    // 크기 조절 대상 이미지 찾기 (클릭해 둔 것 우선, 없고 한 장뿐이면 그걸로)
+    function getTargetImg(label) {
       const ed = document.querySelector('.note-editable');
-      if (!ed) { alert('편집 영역을 찾지 못했어요.'); return; }
-      let img = (lastSelectedImg && ed.contains(lastSelectedImg)) ? lastSelectedImg : null;
-      if (!img) {
-        const imgs = ed.querySelectorAll('img');
-        if (imgs.length === 1) img = imgs[0];                 // 이미지가 하나뿐이면 클릭 안 해도 자동 선택
-        else if (imgs.length === 0) { alert('이 슬라이드에 이미지가 없어요. 먼저 이미지를 넣어 주세요.'); return; }
-        else { alert('이미지가 여러 개예요. 크기를 바꿀 이미지를 먼저 클릭한 뒤 눌러 주세요.'); return; }
-      }
+      if (!ed) return null;
+      if (lastSelectedImg && ed.contains(lastSelectedImg)) return lastSelectedImg;
+      const imgs = ed.querySelectorAll('img');
+      if (imgs.length === 1) return imgs[0];                 // 이미지가 하나뿐이면 클릭 안 해도 자동 선택
+      if (imgs.length === 0) { alert('이 슬라이드에 이미지가 없어요. 먼저 이미지를 넣어 주세요.'); return null; }
+      alert('이미지가 여러 개예요. ' + (label || '바꿀') + ' 이미지를 먼저 클릭한 뒤 눌러 주세요.');
+      return null;
+    }
+
+    // 이미지 크기를 % 단위로 조절 (delta: +10 크게 / -10 작게)
+    function resizeSelImg(delta) {
+      const img = getTargetImg('크기를 바꿀');
+      if (!img) return;
       lastSelectedImg = img;
       let cur = parseInt(img.getAttribute('data-w') || '100', 10);
       if (isNaN(cur)) cur = 100;
@@ -576,6 +589,81 @@
       img.style.height = 'auto';
       img.style.maxWidth = 'none';   // 슬라이드 폭(100%)을 넘어서도 커질 수 있게
       updateSlides();
+    }
+
+    // 이미지를 화면(슬라이드) 폭에 꽉 차게 맞춤
+    function fitImgWidth() {
+      const img = getTargetImg('맞출');
+      if (!img) return;
+      lastSelectedImg = img;
+      img.setAttribute('data-w', 100);
+      img.style.width = '100%';
+      img.style.height = 'auto';
+      img.style.maxWidth = '100%';
+      updateSlides();
+    }
+
+    /* =========================================================
+       PDF 넣기 — PDF를 고해상도로 렌더링해 쪽마다 슬라이드로 추가
+       (사진보다 훨씬 선명. pdf.js는 필요할 때만 불러온다)
+       ========================================================= */
+    var PDFJS_VER = '3.11.174';
+    function _loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script'); s.src = src;
+        s.onload = resolve; s.onerror = function () { reject(new Error('스크립트 로드 실패')); };
+        document.head.appendChild(s);
+      });
+    }
+    async function ensurePdfLib() {
+      if (typeof pdfjsLib !== 'undefined') return;
+      await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.min.js');
+      if (typeof pdfjsLib === 'undefined') throw new Error('PDF 라이브러리를 불러오지 못했어요');
+      // 워커를 같은 출처(blob)로 준비해 안정적으로 동작하게
+      try {
+        var res = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.worker.min.js');
+        var code = await res.text();
+        pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+      } catch (e) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.worker.min.js';
+      }
+    }
+
+    async function handlePdfUpload(e) {
+      var file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      var status = document.getElementById('sync-status');
+      try {
+        if (status) { status.textContent = '📄 PDF 준비 중…'; status.style.color = '#38bdf8'; }
+        await ensurePdfLib();
+        var buf = await file.arrayBuffer();
+        var pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+        var n = pdf.numPages;
+        if (n > 12 && !confirm('이 PDF는 ' + n + '쪽이에요. 모두 슬라이드로 넣으면 저장이 무거워질 수 있어요.\n계속할까요?')) {
+          setStatus(cloudAvailable ? 'saved' : 'localOnly'); return;
+        }
+        var firstNew = slidesData.length;
+        for (var i = 1; i <= n; i++) {
+          if (status) status.textContent = '📄 PDF 처리 중… (' + i + '/' + n + '쪽)';
+          var page = await pdf.getPage(i);
+          var base = page.getViewport({ scale: 1 });
+          var scale = 2000 / base.width;            // 가로 약 2000px로 고해상도 렌더
+          var vp = page.getViewport({ scale: scale });
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          slidesData.push('<img src="' + dataUrl + '" data-w="100" style="width:100%;height:auto;max-width:100%;">');
+        }
+        currentSlideIndex = firstNew;
+        loadSlideToEditor();
+        updateSlides();
+        alert(n + '쪽을 슬라이드로 넣었어요. 넣은 첫 쪽으로 이동했습니다.');
+      } catch (err) {
+        setStatus(cloudAvailable ? 'saved' : 'localOnly');
+        alert('PDF를 처리하지 못했어요.\n' + (err && err.message ? err.message : err));
+      }
     }
 
     /* =========================================================
