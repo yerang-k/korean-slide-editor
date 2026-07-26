@@ -559,11 +559,15 @@
     // 클릭해 둔 이미지의 크기를 % 단위로 조절 (delta: +10 크게 / -10 작게)
     function resizeSelImg(delta) {
       const ed = document.querySelector('.note-editable');
-      if (!lastSelectedImg || !ed || !ed.contains(lastSelectedImg)) {
-        alert('크기를 바꿀 이미지를 먼저 클릭해서 선택해 주세요.');
-        return;
+      if (!ed) { alert('편집 영역을 찾지 못했어요.'); return; }
+      let img = (lastSelectedImg && ed.contains(lastSelectedImg)) ? lastSelectedImg : null;
+      if (!img) {
+        const imgs = ed.querySelectorAll('img');
+        if (imgs.length === 1) img = imgs[0];                 // 이미지가 하나뿐이면 클릭 안 해도 자동 선택
+        else if (imgs.length === 0) { alert('이 슬라이드에 이미지가 없어요. 먼저 이미지를 넣어 주세요.'); return; }
+        else { alert('이미지가 여러 개예요. 크기를 바꿀 이미지를 먼저 클릭한 뒤 눌러 주세요.'); return; }
       }
-      const img = lastSelectedImg;
+      lastSelectedImg = img;
       let cur = parseInt(img.getAttribute('data-w') || '100', 10);
       if (isNaN(cur)) cur = 100;
       cur = Math.max(10, Math.min(400, cur + delta)); // 10% ~ 400%(4배)
