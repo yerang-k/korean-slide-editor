@@ -78,7 +78,7 @@
     .reveal h1, .reveal h2, .reveal h3, .note-editable h1, .note-editable h2, .note-editable h3 { color: #0f172a; font-weight: 700; word-break: keep-all; margin-top: 0; }
 
     /* 🖼️ 잡지식 배치: 이미지를 왼쪽에 띄우고 글자가 오른쪽 위에서부터 감싸도록 */
-    .reveal img, .note-editable img { max-width: 100%; max-height: 400px; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
+    .reveal img, .note-editable img { max-width: 100%; height: auto; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
     /* 디자인 상자는 이미지 옆에 끼지 않고 항상 아랫줄부터 시작 */
     .reveal .card-box, .reveal .bogi-box, .reveal .box-blue, .reveal .box-green, .reveal .box-yellow, .reveal .box-red,
     .note-editable .card-box, .note-editable .bogi-box, .note-editable .box-blue, .note-editable .box-green, .note-editable .box-yellow, .note-editable .box-red { clear: both; }
@@ -196,6 +196,9 @@
       <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenImageInput').click();">
         <i class="fa-solid fa-image"></i> 내 PC 이미지
       </button>
+
+      <button class="tool-btn" onclick="resizeSelImg(-10)" title="클릭해 둔 이미지를 작게"><i class="fa-solid fa-magnifying-glass-minus"></i> 이미지</button>
+      <button class="tool-btn" onclick="resizeSelImg(10)" title="클릭해 둔 이미지를 크게"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
     </div>
 
     <div class="editor-workspace">
@@ -259,6 +262,7 @@
     let currentSlideIndex = 0;
     let isLoading = true;
     let saveTimer = null;
+    let lastSelectedImg = null; // 크기 조절용으로 마지막에 클릭한 이미지
 
     /* ---------- 저장소 추상화 (클라우드 / 로컬 공용) ---------- */
     function localAll() { try { return JSON.parse(localStorage.getItem(LKEY)) || {}; } catch (e) { return {}; } }
@@ -325,7 +329,11 @@
 
       // 디자인 상자 안에서 Enter로 밖으로 나가기 처리 (캡처 단계에서 가로챔)
       var _editable = document.querySelector('.note-editable');
-      if (_editable) _editable.addEventListener('keydown', onBoxEnter, true);
+      if (_editable) {
+        _editable.addEventListener('keydown', onBoxEnter, true);
+        // 이미지를 클릭하면 크기 조절 대상으로 기억
+        _editable.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'IMG') lastSelectedImg = e.target; });
+      }
 
       updateModeButton(); // 수업/편집 모드 버튼 초기 표시
 
@@ -523,13 +531,13 @@
       reader.onload = function (event) {
         const img = new Image();
         img.onload = function () {
-          const maxW = 1280;
+          const maxW = 1600; // 학습지 같은 글자 많은 스캔도 읽히도록 넉넉하게
           let w = img.width, h = img.height;
           if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           $('#summernote').summernote('restoreRange');
           $('#summernote').summernote('focus');
           $('#summernote').summernote('insertImage', dataUrl);
@@ -545,6 +553,23 @@
       };
       reader.readAsDataURL(file);
       e.target.value = '';
+    }
+
+    // 클릭해 둔 이미지의 크기를 % 단위로 조절 (delta: +10 크게 / -10 작게)
+    function resizeSelImg(delta) {
+      const ed = document.querySelector('.note-editable');
+      if (!lastSelectedImg || !ed || !ed.contains(lastSelectedImg)) {
+        alert('크기를 바꿀 이미지를 먼저 클릭해서 선택해 주세요.');
+        return;
+      }
+      const img = lastSelectedImg;
+      let cur = parseInt(img.getAttribute('data-w') || '100', 10);
+      if (isNaN(cur)) cur = 100;
+      cur = Math.max(10, Math.min(100, cur + delta));
+      img.setAttribute('data-w', cur);
+      img.style.width = cur + '%';
+      img.style.height = 'auto';
+      updateSlides();
     }
 
     /* =========================================================
