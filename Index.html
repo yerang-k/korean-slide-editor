@@ -67,7 +67,7 @@
     .note-modal, .modal-backdrop, .note-modal-backdrop { display: none !important; z-index: -9999 !important; visibility: hidden !important; }
 
     /* 저작권 표시 */
-    .editor-footer { padding: 8px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; line-height: 1.5; word-break: keep-all; }
+    .editor-footer { padding: 6px 14px; background: #f8fafc; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; line-height: 1.45; text-align: center; word-break: keep-all; }
 
     #preview-container { flex: 1; height: 100%; position: relative; background: #0f172a; transition: all 0.3s ease; }
     .reveal-viewport { background: #f8fafc !important; }
@@ -123,6 +123,21 @@
     #demo-banner a:hover { text-decoration: underline; }
     #demo-banner .x { background: #334155; color: #cbd5e1; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; flex: none; }
     #demo-banner .x:hover { background: #475569; }
+
+    /* 판서판(칠판) — 오른쪽에서 슬라이드-인 하는 오버레이 보드 */
+    #board-container { position: fixed; top: 0; right: -52%; height: 100%; width: 50%; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #cbd5e1; overflow: hidden; z-index: 200; box-shadow: -8px 0 24px rgba(0,0,0,.25); }
+    #board-container.open { right: 0; }
+    .board-header { padding: 12px 16px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .board-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .board-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 12px; background: #1e293b; border-bottom: 1px solid #334155; }
+    .board-toolbar .bt-label { color: #94a3b8; font-size: 12px; font-weight: 600; }
+    .board-toolbar .bt-sep { width: 1px; height: 20px; background: #475569; margin: 0 4px; }
+    .board-toolbar .tool-btn { padding: 6px 9px; font-size: 12px; }
+    .board-toolbar .tool-btn.active { background: #38bdf8 !important; color: #0f172a !important; border-color: #38bdf8 !important; }
+    .board-swatch { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #64748b; cursor: pointer; padding: 0; }
+    .board-swatch.sel { outline: 3px solid #38bdf8; outline-offset: 1px; }
+    #board-surface { flex: 1; position: relative; overflow: hidden; background: #ffffff; }
+    #board-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
   </style>
 </head>
 <body>
@@ -217,9 +232,7 @@
 
     <div class="editor-footer">
       국어 수업 슬라이드 에디터 © 2026 KIMYERANG.<br>
-      선생님들께서 자유롭게 쓰실 수 있습니다. 만든 이의 허락 없이<br>
-      재배포하거나 자기 저작물로 공개하는 것은 금지하며,<br>
-      이 저작권 표시를 지우지 말아 주세요.
+      자유롭게 쓰시되 무단 재배포·자기 저작물 공개는 금지하며, 이 표시는 지우지 말아 주세요.
     </div>
   </div>
 
@@ -236,12 +249,39 @@
       <span style="color:#475569">|</span>
       <button id="draw-toggle-btn" onclick="toggleDrawingMode()"><i class="fa-solid fa-pen"></i> 판서(P)</button>
       <button onclick="clearCanvas()"><i class="fa-solid fa-eraser"></i> 지우기(C)</button>
+      <span style="color:#475569">|</span>
+      <button id="board-toggle-btn" onclick="toggleBoard()"><i class="fa-solid fa-chalkboard-user"></i> 판서판</button>
     </div>
 
     <canvas id="chalkboard-canvas"></canvas>
 
     <div class="reveal">
       <div class="slides" id="slides-target"></div>
+    </div>
+  </div>
+
+  <div id="board-container">
+    <div class="board-header">
+      <h2><i class="fa-solid fa-chalkboard-user"></i> 판서판</h2>
+      <button class="tool-btn" onclick="toggleBoard()" style="padding:4px 8px; font-size:12px;"><i class="fa-solid fa-angles-right"></i> 닫기</button>
+    </div>
+    <div class="board-toolbar">
+      <span class="bt-label">판</span>
+      <button class="board-swatch" title="흰 판" onclick="setBoard('white')" style="background:#ffffff;"></button>
+      <button class="board-swatch" title="검은 판" onclick="setBoard('black')" style="background:#111827;"></button>
+      <span class="bt-sep"></span>
+      <span class="bt-label">펜</span>
+      <button class="board-swatch" title="검정" onclick="setBoardPen('#111111', this)" style="background:#111111;"></button>
+      <button class="board-swatch" title="흰색" onclick="setBoardPen('#ffffff', this)" style="background:#ffffff;"></button>
+      <button class="board-swatch" title="빨강" onclick="setBoardPen('#ef4444', this)" style="background:#ef4444;"></button>
+      <button class="board-swatch" title="파랑" onclick="setBoardPen('#3b82f6', this)" style="background:#3b82f6;"></button>
+      <button class="board-swatch" title="노랑" onclick="setBoardPen('#eab308', this)" style="background:#eab308;"></button>
+      <span class="bt-sep"></span>
+      <button class="tool-btn" id="board-erase-btn" onclick="toggleBoardEraser()"><i class="fa-solid fa-eraser"></i> 지우개</button>
+      <button class="tool-btn" onclick="clearBoard()"><i class="fa-solid fa-trash"></i> 전체 지우기</button>
+    </div>
+    <div id="board-surface">
+      <canvas id="board-canvas"></canvas>
     </div>
   </div>
 
@@ -349,6 +389,7 @@
       });
       renderRevealSlides();
       initDrawing();
+      initBoard();
 
       // reveal 초기화가 '끝난 뒤'에 데이터를 불러온다.
       // (초기화가 끝나기 전에 revealEngine.sync()가 호출되면 오류가 나서,
@@ -901,6 +942,78 @@
     }
     function clearCanvas() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
     function resizeCanvas() { const container = document.getElementById('preview-container'); canvas.width = container.clientWidth; canvas.height = container.clientHeight; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3; ctx.lineCap = 'round'; }
+
+    /* =========================================================
+       판서판(칠판) — 오른쪽에서 열리는 판서용 보드 (흰 판/검은 판)
+       ========================================================= */
+    let boardOpen = false, boardCanvas, boardCtx, boardDrawing = false, boardColor = 'white', boardPen = '#111111', boardErase = false;
+
+    function toggleBoard() {
+      const c = document.getElementById('board-container');
+      boardOpen = !boardOpen;
+      c.classList.toggle('open', boardOpen);
+      // 최종 위치는 인라인으로 확실히 고정
+      if (c.getAnimations) { try { c.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {} }
+      c.style.right = boardOpen ? '0px' : '-52%';
+      const btn = document.getElementById('board-toggle-btn');
+      if (btn) btn.classList.toggle('active', boardOpen);
+      setTimeout(function () { resizeBoardCanvas(); }, 30);
+    }
+
+    function initBoard() {
+      boardCanvas = document.getElementById('board-canvas');
+      if (!boardCanvas) return;
+      boardCtx = boardCanvas.getContext('2d');
+      setBoard('white');
+      function xy(e) { const r = boardCanvas.getBoundingClientRect(); const t = (e.touches && e.touches[0]) ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; }
+      function useStroke() {
+        if (boardErase) { boardCtx.globalCompositeOperation = 'destination-out'; boardCtx.lineWidth = 30; }
+        else { boardCtx.globalCompositeOperation = 'source-over'; boardCtx.strokeStyle = boardPen; boardCtx.lineWidth = 3; }
+        boardCtx.lineCap = 'round'; boardCtx.lineJoin = 'round';
+      }
+      function down(e) { boardDrawing = true; const p = xy(e); boardCtx.beginPath(); boardCtx.moveTo(p.x, p.y); if (e.cancelable) e.preventDefault(); }
+      function move(e) { if (!boardDrawing) return; const p = xy(e); useStroke(); boardCtx.lineTo(p.x, p.y); boardCtx.stroke(); if (e.cancelable) e.preventDefault(); }
+      function up() { boardDrawing = false; }
+      boardCanvas.addEventListener('mousedown', down);
+      boardCanvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+      boardCanvas.addEventListener('touchstart', down, { passive: false });
+      boardCanvas.addEventListener('touchmove', move, { passive: false });
+      boardCanvas.addEventListener('touchend', up);
+      window.addEventListener('resize', function () { if (boardOpen) resizeBoardCanvas(); });
+    }
+
+    function resizeBoardCanvas() {
+      if (!boardCanvas) return;
+      const surf = document.getElementById('board-surface');
+      const w = surf.clientWidth, h = surf.clientHeight;
+      if (!w || !h) return;
+      let data = null;
+      try { if (boardCanvas.width && boardCanvas.height) data = boardCanvas.toDataURL(); } catch (e) {}
+      boardCanvas.width = w; boardCanvas.height = h;
+      if (data) { const im = new Image(); im.onload = function () { boardCtx.drawImage(im, 0, 0, w, h); }; im.src = data; }
+    }
+
+    function setBoard(color) {
+      boardColor = color;
+      const surf = document.getElementById('board-surface');
+      if (surf) surf.style.background = (color === 'black') ? '#111827' : '#ffffff';
+      setBoardPen(color === 'black' ? '#ffffff' : '#111111');   // 판 색에 맞춰 기본 펜 자동 전환
+    }
+
+    function setBoardPen(color, el) {
+      boardPen = color; boardErase = false;
+      const eb = document.getElementById('board-erase-btn'); if (eb) eb.classList.remove('active');
+      document.querySelectorAll('#board-container .board-swatch').forEach(function (s) { s.classList.remove('sel'); });
+      if (el) el.classList.add('sel');
+    }
+
+    function toggleBoardEraser() {
+      boardErase = !boardErase;
+      const eb = document.getElementById('board-erase-btn'); if (eb) eb.classList.toggle('active', boardErase);
+    }
+
+    function clearBoard() { if (boardCtx) boardCtx.clearRect(0, 0, boardCanvas.width, boardCanvas.height); }
   </script>
 </body>
 </html>
