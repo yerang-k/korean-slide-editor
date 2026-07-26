@@ -332,7 +332,8 @@
       if (_editable) {
         _editable.addEventListener('keydown', onBoxEnter, true);
         // 이미지를 클릭하면 크기 조절 대상으로 기억
-        _editable.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'IMG') lastSelectedImg = e.target; });
+        // (summernote가 click 이벤트를 가로챌 수 있어 mousedown + 캡처 단계로 확실히 잡는다)
+        _editable.addEventListener('mousedown', function (e) { if (e.target && e.target.tagName === 'IMG') lastSelectedImg = e.target; }, true);
       }
 
       updateModeButton(); // 수업/편집 모드 버튼 초기 표시
