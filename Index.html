@@ -43,6 +43,17 @@
     .slide-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
     .slide-page-indicator { font-size: 14px; font-weight: bold; color: #334155; }
 
+    /* 슬라이드 썸네일 필름스트립 (드래그로 순서 변경) */
+    .filmstrip { display: flex; gap: 8px; padding: 8px 12px; background: #e8edf3; border-bottom: 1px solid #cbd5e1; overflow-x: auto; overflow-y: hidden; }
+    .filmstrip:empty { display: none; }
+    .thumb { position: relative; flex: 0 0 auto; width: 112px; height: 63px; border: 2px solid #cbd5e1; border-radius: 5px; background: #f8fafc; overflow: hidden; cursor: grab; }
+    .thumb.current { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb; }
+    .thumb.insert-left { box-shadow: -3px 0 0 #10b981; }
+    .thumb.insert-right { box-shadow: 3px 0 0 #10b981; }
+    .thumb.dragging { opacity: .4; }
+    .thumb-stage { width: 1280px; height: 720px; transform: scale(0.0875); transform-origin: top left; padding: 30px 50px; box-sizing: border-box; background: #f8fafc; text-align: left; font-family: 'Pretendard', sans-serif; font-size: 24px; color: #334155; line-height: 1.6; overflow: hidden; pointer-events: none; }
+    .thumb-num { position: absolute; bottom: 2px; left: 3px; font-size: 10px; font-weight: 700; color: #fff; background: rgba(15,23,42,.72); padding: 0 5px; border-radius: 8px; pointer-events: none; }
+
     .custom-toolbar { padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
     .custom-toolbar .tool-btn { padding: 5px 7px; font-size: 12px; gap: 4px; }
 
@@ -80,10 +91,10 @@
     .reveal .slides section, .note-editable { text-align: left; font-family: 'Pretendard', sans-serif; font-size: 24px; color: #334155; line-height: 1.6; }
     .note-editable { font-size: 16px; }
 
-    .reveal h1, .reveal h2, .reveal h3, .note-editable h1, .note-editable h2, .note-editable h3 { color: #0f172a; font-weight: 700; word-break: keep-all; margin-top: 0; }
+    .reveal h1, .reveal h2, .reveal h3, .note-editable h1, .note-editable h2, .note-editable h3, .thumb-stage h1, .thumb-stage h2, .thumb-stage h3 { color: #0f172a; font-weight: 700; word-break: keep-all; margin-top: 0; }
 
     /* 🖼️ 잡지식 배치: 이미지를 왼쪽에 띄우고 글자가 오른쪽 위에서부터 감싸도록 */
-    .reveal img, .note-editable img { max-width: 100%; max-height: none; height: auto; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
+    .reveal img, .note-editable img, .thumb-stage img { max-width: 100%; max-height: none; height: auto; border-radius: 8px; margin: 4px 18px 8px 0; vertical-align: top; float: left; }
     /* reveal 기본 CSS가 이미지에 max-height:95%를 걸어 세로로 긴 이미지가 눌리는 것 방지 */
     .reveal .slides section img { max-height: none; }
     /* 디자인 상자는 이미지 옆에 끼지 않고 항상 아랫줄부터 시작 */
@@ -184,6 +195,8 @@
       <button class="tool-btn" onclick="nextSlide()">다음 <i class="fa-solid fa-chevron-right"></i></button>
       <button class="tool-btn" style="color:#ef4444" onclick="deleteCurrentSlide()" title="이 슬라이드(장) 삭제"><i class="fa-solid fa-xmark"></i> 장 삭제</button>
     </div>
+
+    <div class="filmstrip" id="filmstrip" title="슬라이드를 드래그해서 순서를 바꾸세요"></div>
 
     <div class="custom-toolbar">
       <button class="tool-btn" onclick="insertBadge()" title="단계 태그 넣기"><i class="fa-solid fa-tag"></i> 태그</button>
@@ -436,7 +449,7 @@
       slidesData = defaultSlides.slice();
       currentSlideIndex = 0;
       isLoading = false;
-      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0); renderThumbs();
       decks = [{ name: currentDeck, updated: Date.now() }];
       renderDeckSelect();
       saveNow(false); // 파일 생성
@@ -455,7 +468,7 @@
       try { if (raw) { const p = JSON.parse(raw); if (p && Array.isArray(p.slides) && p.slides.length) sl = p.slides; } } catch (e) {}
       slidesData = sl || defaultSlides.slice();
       currentSlideIndex = 0;
-      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0); renderThumbs();
       isLoading = false;
       renderDeckSelect();
       setStatus(cloudAvailable ? 'saved' : 'localOnly');
@@ -476,7 +489,7 @@
       slidesData = ['<h2>📌 ' + escapeHtml(name) + '</h2><p>내용을 입력하세요.</p><p><br></p>'];
       currentSlideIndex = 0;
       isLoading = false;
-      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0);
+      loadSlideToEditor(); renderRevealSlides(); revealEngine.sync(); revealEngine.slide(0); renderThumbs();
       decks.unshift({ name: name, updated: Date.now() });
       renderDeckSelect();
       saveNow(false); // 새 작품 파일 생성
@@ -809,6 +822,7 @@
       const content = slidesData[currentSlideIndex] || '';
       $('#summernote').summernote('code', content);
       document.getElementById('slideIndicator').innerText = `슬라이드 ${currentSlideIndex + 1} / ${slidesData.length}`;
+      highlightThumb();
     }
 
     function prevSlide() {
@@ -877,11 +891,93 @@
       slidesContainer.innerHTML = htmlContent;
     }
 
+    /* =========================================================
+       슬라이드 썸네일 필름스트립 — 드래그로 순서 변경, 클릭으로 이동
+       ========================================================= */
+    let thumbDragFrom = null;
+
+    function clearInsertMarks() {
+      document.querySelectorAll('#filmstrip .thumb').forEach(function (t) { t.classList.remove('insert-left', 'insert-right'); });
+    }
+
+    function renderThumbs() {
+      const fs = document.getElementById('filmstrip');
+      if (!fs) return;
+      fs.innerHTML = '';
+      slidesData.forEach(function (html, i) {
+        const t = document.createElement('div');
+        t.className = 'thumb' + (i === currentSlideIndex ? ' current' : '');
+        t.draggable = true;
+        t.innerHTML = '<div class="thumb-stage">' + html + '</div><span class="thumb-num">' + (i + 1) + '</span>';
+        t.addEventListener('click', function () { selectSlide(i); });
+        t.addEventListener('dragstart', function (e) {
+          thumbDragFrom = i; t.classList.add('dragging');
+          if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch (_) {} }
+        });
+        t.addEventListener('dragend', function () { t.classList.remove('dragging'); clearInsertMarks(); thumbDragFrom = null; });
+        t.addEventListener('dragover', function (e) {
+          if (thumbDragFrom === null) return;
+          e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+          const rect = t.getBoundingClientRect();
+          const after = (e.clientX - rect.left) > rect.width / 2;
+          clearInsertMarks();
+          t.classList.add(after ? 'insert-right' : 'insert-left');
+        });
+        t.addEventListener('dragleave', function () { t.classList.remove('insert-left', 'insert-right'); });
+        t.addEventListener('drop', function (e) {
+          e.preventDefault();
+          const rect = t.getBoundingClientRect();
+          const after = (e.clientX - rect.left) > rect.width / 2;
+          clearInsertMarks();
+          moveSlide(thumbDragFrom, after ? i + 1 : i);
+        });
+        fs.appendChild(t);
+      });
+      const cur = fs.querySelector('.thumb.current');
+      if (cur && cur.scrollIntoView) cur.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+
+    function highlightThumb() {
+      const fs = document.getElementById('filmstrip');
+      if (!fs) return;
+      const thumbs = fs.querySelectorAll('.thumb');
+      if (thumbs.length !== slidesData.length) { renderThumbs(); return; }
+      thumbs.forEach(function (t, i) { t.classList.toggle('current', i === currentSlideIndex); });
+      const cur = fs.querySelector('.thumb.current');
+      if (cur && cur.scrollIntoView) cur.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+
+    function selectSlide(i) {
+      if (i === currentSlideIndex) return;
+      currentSlideIndex = i;
+      loadSlideToEditor();
+      revealEngine.slide(i);
+    }
+
+    function moveSlide(from, insBefore) {
+      if (from === null || from === undefined) return;
+      let ins = insBefore;
+      if (from < ins) ins--;                 // 제거로 인해 뒤쪽 목표 위치가 한 칸 당겨짐
+      ins = Math.max(0, Math.min(slidesData.length - 1, ins));
+      if (ins === from) return;              // 제자리면 아무것도 안 함
+      const edited = slidesData[currentSlideIndex];
+      const item = slidesData.splice(from, 1)[0];
+      slidesData.splice(ins, 0, item);
+      currentSlideIndex = slidesData.indexOf(edited);
+      if (currentSlideIndex < 0) currentSlideIndex = ins;
+      renderRevealSlides();
+      revealEngine.sync();
+      revealEngine.slide(currentSlideIndex);
+      renderThumbs();
+      scheduleSave();
+    }
+
     function updateSlides() {
       slidesData[currentSlideIndex] = $('#summernote').summernote('code');
       renderRevealSlides();
       revealEngine.sync();
       revealEngine.slide(currentSlideIndex);
+      renderThumbs();
       scheduleSave();
     }
 
