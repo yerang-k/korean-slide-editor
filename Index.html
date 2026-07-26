@@ -18,8 +18,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Pretendard', -apple-system, sans-serif; display: flex; height: 100vh; overflow: hidden; background: #0f172a; color: #1e293b; }
 
-    #editor-container { width: 45%; height: 100%; display: flex; flex-direction: column; background: #ffffff; border-right: 1px solid #cbd5e1; transition: all 0.3s ease; position: relative; z-index: 10; }
+    #editor-container { width: var(--editor-w, 45%); height: 100%; display: flex; flex-direction: column; background: #ffffff; border-right: 1px solid #cbd5e1; transition: all 0.3s ease; position: relative; z-index: 10; }
     #editor-container.collapsed { width: 0; min-width: 0; overflow: hidden; border-right: none; }
+    .editor-resize { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: ew-resize; z-index: 50; }
+    .editor-resize::before { content: ''; position: absolute; top: 50%; right: 2px; transform: translateY(-50%); width: 4px; height: 48px; border-radius: 3px; background: #94a3b8; opacity: .4; transition: opacity .15s; }
+    .editor-resize:hover::before { opacity: 1; }
+    #editor-container.collapsed .editor-resize { display: none; }
 
     .editor-header { padding: 12px 16px; background: #0f172a; color: white; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .editor-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -39,7 +43,8 @@
     .slide-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #e2e8f0; border-bottom: 1px solid #cbd5e1; }
     .slide-page-indicator { font-size: 14px; font-weight: bold; color: #334155; }
 
-    .custom-toolbar { padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .custom-toolbar { padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .custom-toolbar .tool-btn { padding: 5px 7px; font-size: 12px; gap: 4px; }
 
     .dropdown { position: relative; display: inline-block; }
     .dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 170px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; border-radius: 6px; border: 1px solid #cbd5e1; overflow: hidden; top: 100%; left: 0; margin-top: 4px; }
@@ -155,6 +160,7 @@
   <input type="file" id="hiddenPdfInput" accept="application/pdf,.pdf" style="display:none;" onchange="handlePdfUpload(event)">
 
   <div id="editor-container">
+    <div class="editor-resize" title="드래그해서 편집창 너비 조절"></div>
     <div class="editor-header">
       <h2><i class="fa-solid fa-graduation-cap"></i> 국어 수업 슬라이드 에디터</h2>
       <button class="tool-btn" onclick="toggleEditor()" style="padding:4px 8px; font-size:12px;"><i class="fa-solid fa-angles-left"></i> 접기</button>
@@ -180,10 +186,10 @@
     </div>
 
     <div class="custom-toolbar">
-      <button class="tool-btn" onclick="insertBadge()"><i class="fa-solid fa-tag"></i> 태그</button>
+      <button class="tool-btn" onclick="insertBadge()" title="단계 태그 넣기"><i class="fa-solid fa-tag"></i> 태그</button>
 
       <div class="dropdown">
-        <button class="tool-btn"><i class="fa-solid fa-shapes"></i> 디자인 상자 ▾</button>
+        <button class="tool-btn"><i class="fa-solid fa-shapes"></i> 상자 ▾</button>
         <div class="dropdown-content">
           <a onclick="insertBox('card')">⬜ 기본 하얀색 카드</a>
           <a onclick="insertBox('bogi')">🟦 파란선 &lt;보기&gt;</a>
@@ -212,16 +218,14 @@
         </div>
       </div>
 
-      <button class="tool-btn" onclick="exitBox()" title="커서가 있는 상자 밖으로 나가기"><i class="fa-solid fa-arrow-turn-down"></i> 상자 밖으로</button>
+      <button class="tool-btn" onclick="exitBox()" title="커서가 있는 상자 밖으로 나가기"><i class="fa-solid fa-arrow-turn-down"></i></button>
 
-      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenImageInput').click();">
-        <i class="fa-solid fa-image"></i> 내 PC 이미지
-      </button>
+      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenImageInput').click();" title="내 PC 이미지 넣기"><i class="fa-solid fa-image"></i> 이미지</button>
 
-      <button class="tool-btn" onclick="resizeSelImg(-10)" title="클릭해 둔 이미지를 작게"><i class="fa-solid fa-magnifying-glass-minus"></i> 이미지</button>
-      <button class="tool-btn" onclick="resizeSelImg(10)" title="클릭해 둔 이미지를 크게"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-      <button class="tool-btn" onclick="fitImgWidth()" title="이미지를 화면 폭에 꽉 차게"><i class="fa-solid fa-arrows-left-right-to-line"></i> 폭 맞춤</button>
-      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenPdfInput').click();" title="PDF를 고화질로 슬라이드에 넣기"><i class="fa-solid fa-file-pdf"></i> PDF 넣기</button>
+      <button class="tool-btn" onclick="resizeSelImg(-10)" title="이미지 작게"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+      <button class="tool-btn" onclick="resizeSelImg(10)" title="이미지 크게"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+      <button class="tool-btn" onclick="fitImgWidth()" title="이미지를 화면 폭에 꽉 차게"><i class="fa-solid fa-arrows-left-right-to-line"></i></button>
+      <button class="tool-btn tool-btn-primary" onclick="document.getElementById('hiddenPdfInput').click();" title="PDF를 고화질로 넣기"><i class="fa-solid fa-file-pdf"></i> PDF</button>
     </div>
 
     <div class="editor-workspace">
@@ -398,6 +402,7 @@
       renderRevealSlides();
       initDrawing();
       initBoard();
+      initEditorResize();
 
       // reveal 초기화가 '끝난 뒤'에 데이터를 불러온다.
       // (초기화가 끝나기 전에 revealEngine.sync()가 호출되면 오류가 나서,
@@ -884,7 +889,28 @@
       const container = document.getElementById('editor-container');
       container.classList.toggle('collapsed');
       updateModeButton();
-      setTimeout(() => { revealEngine.layout(); resizeCanvas(); }, 300);
+      setTimeout(() => { if (revealEngine) revealEngine.layout(); resizeCanvas(); }, 300);
+    }
+
+    // 편집창 오른쪽 가장자리 드래그로 너비 조절
+    function initEditorResize() {
+      const container = document.getElementById('editor-container');
+      const grip = container.querySelector('.editor-resize');
+      if (!grip) return;
+      let resizing = false;
+      function apply(clientX) {
+        let w = clientX;
+        const min = 280, max = Math.round(window.innerWidth * 0.8);
+        if (w < min) w = min;
+        if (w > max) w = max;
+        container.style.setProperty('--editor-w', w + 'px');
+      }
+      grip.addEventListener('mousedown', function (e) { resizing = true; container.style.transition = 'none'; document.body.style.userSelect = 'none'; e.preventDefault(); });
+      window.addEventListener('mousemove', function (e) { if (resizing) apply(e.clientX); });
+      window.addEventListener('mouseup', function () { if (resizing) { resizing = false; container.style.transition = ''; document.body.style.userSelect = ''; if (revealEngine) revealEngine.layout(); resizeCanvas(); } });
+      grip.addEventListener('touchstart', function (e) { resizing = true; container.style.transition = 'none'; e.preventDefault(); }, { passive: false });
+      window.addEventListener('touchmove', function (e) { if (resizing && e.touches[0]) { apply(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+      window.addEventListener('touchend', function () { if (resizing) { resizing = false; container.style.transition = ''; if (revealEngine) revealEngine.layout(); resizeCanvas(); } });
     }
 
     // 편집창이 열려 있으면 '편집 모드', 접혀 있으면 '수업 모드'로 버튼 표시
